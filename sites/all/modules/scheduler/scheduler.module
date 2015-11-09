@@ -108,7 +108,7 @@ function scheduler_help($section) {
         . "execute any cron tasks defined by Drupal core or any other modules.") . '</p>'
         . '<p>' . t("Scheduler's cron is at /scheduler/cron and a sample crontab entry to run scheduler every minute might look like:") . '</p>'
         . '<code>* * * * * /usr/bin/wget -O - -q "http://example.com/scheduler/cron"</code>'
-        . '<p>or</p>'
+        . '<p>' . t('or') . '</p>'
         . '<code>* * * * * curl "http://example.com/scheduler/cron" > /dev/null 2>&1</code>';
       break;
     case 'admin/modules#description':
@@ -162,7 +162,14 @@ function scheduler_admin() {
   return system_settings_form($form);
 }
 
+/**
+ * Validate the scheduler admin settings.
+ */
 function scheduler_admin_validate($form, &$form_state) {
+  // Replace all contiguous whitespaces (including tabs and newlines) with a
+  // single space.
+  $form_state['values']['scheduler_date_format'] = trim(preg_replace('/\s+/', ' ', $form_state['values']['scheduler_date_format']));
+
   if ($form_state['values']['scheduler_field_type'] == 'date_popup') {
     $format = $form_state['values']['scheduler_date_format'];
     $time_format = date_limit_format($format, array('hour', 'minute', 'second'));
@@ -182,6 +189,33 @@ function _scheduler_use_date_popup() {
 }
 
 /**
+ * Implementation of hook_date_api_fields().
+ */
+function scheduler_date_api_fields($field) {
+  $values = array(
+    // The type of date: DATE_UNIX, DATE_ISO, DATE_DATETIME.
+    'sql_type' => DATE_UNIX,
+    // Timezone handling options: 'none', 'site', 'date', 'utc'.
+    'tz_handling' => 'site',
+    // Needed only for dates that use 'date' tz_handling.
+    'timezone_field' => '',
+    // Needed only for dates that use 'date' tz_handling.
+    'offset_field' => '',
+    // Array of "table.field" values for related fields that should be loaded
+    // automatically in the Views SQL.
+    'related_fields' => array(),
+    // Granularity of this date field's db data.
+    'granularity' => array('year', 'month', 'day', 'hour', 'minute', 'second'),
+  );
+
+  switch ($field) {
+    case 'scheduler.publish_on':
+    case 'scheduler.unpublish_on':
+      return $values;
+  }
+}
+
+/**
  * Implementation of hook_form_alter().
  */
 function scheduler_form_alter(&$form, $form_state, $form_id) {
@@ -191,7 +225,7 @@ function scheduler_form_alter(&$form, $form_state, $form_id) {
 
     $form['scheduler'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Scheduler settings',
+      '#title' => t('Scheduler settings'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#weight' => 35,
@@ -200,7 +234,7 @@ function scheduler_form_alter(&$form, $form_state, $form_id) {
 
     $form['scheduler']['publish'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Publishing settings',
+      '#title' => t('Publishing settings'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#weight' => 1,
@@ -233,7 +267,7 @@ function scheduler_form_alter(&$form, $form_state, $form_id) {
 
     $form['scheduler']['unpublish'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Unpublishing settings',
+      '#title' => t('Unpublishing settings'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#weight' => 2,
@@ -328,7 +362,7 @@ function scheduler_form_alter(&$form, $form_state, $form_id) {
         if ($extra_info && $extra_info != '') {
           $form['scheduler_settings']['extra_info'] = array(
             '#type' => 'item',
-            '#value' => $extra_info,
+            '#value' => filter_xss_admin($extra_info),
           );
         }
 
@@ -416,6 +450,8 @@ function scheduler_list() {
   $sql .= tablesort_sql($header);
   $result = pager_query($sql, 50);
 
+  $rows = array();
+
   while ($node = db_fetch_object($result)) {
     $rows[] = array(
       l($node->title, "node/$node->nid"),
@@ -452,7 +488,8 @@ function _scheduler_strtotime($str) {
     if (_scheduler_use_date_popup()) {
           $date_format = SCHEDULER_DATE_FORMAT;
     }
-    $time=_scheduler_strptime(trim($str), $date_format);
+    $str = trim(preg_replace('/\s+/', ' ', $str));
+    $time = _scheduler_strptime($str, $date_format);
     if ($time!==FALSE) {
       // success
       $time -= _scheduler_get_user_timezone();
@@ -637,21 +674,24 @@ function scheduler_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
       case 'update':
         if (isset($node->nid) && $node->nid) {
           $exists = db_result(db_query('SELECT nid FROM {scheduler} WHERE nid = %d', $node->nid));
+          $publish_on = isset($node->publish_on) ? $node->publish_on : NULL;
+          $unpublish_on = isset($node->unpublish_on) ? $node->unpublish_on : NULL;
 
           // if this node has already been scheduled, update its record
           if ($exists) {
             // only update database if we need to (un)publish this node at some date
             // otherwise the user probably cleared out the (un)publish dates so we should remove the record
-            if (($node->status == 0 && isset($node->publish_on) && $node->publish_on != NULL) || (isset($node->unpublish_on) && $node->unpublish_on != NULL)) {
-              db_query('UPDATE {scheduler} SET publish_on = %d, unpublish_on = %d WHERE nid = %d', $node->publish_on, $node->unpublish_on, $node->nid);
+            if (($node->status == 0 && $publish_on) || $unpublish_on) {
+              db_query('UPDATE {scheduler} SET publish_on = %d, unpublish_on = %d WHERE nid = %d', $publish_on, $unpublish_on, $node->nid);
             }
             else {
               db_query('DELETE FROM {scheduler} WHERE nid = %d', $node->nid);
             }
           }
-          // node doesn't exist, create a record only if the (un)publish fields are blank
-          elseif ((isset($node->publish_on) && $node->publish_on != NULL) || (isset($node->unpublish_on) && $node->unpublish_on != NULL)) {
-            db_query('INSERT INTO {scheduler} (nid, publish_on, unpublish_on) VALUES (%d, %d, %d)', $node->nid, $node->publish_on, $node->unpublish_on);
+          // Node doesn't exist, create a record only if the (un)publish fields
+          // are not blank.
+          elseif ($publish_on || $unpublish_on) {
+            db_query('INSERT INTO {scheduler} (nid, publish_on, unpublish_on) VALUES (%d, %d, %d)', $node->nid, $publish_on, $unpublish_on);
           }
         }
         break;
@@ -661,6 +701,27 @@ function scheduler_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         }
         break;
     }
+  }
+}
+
+/**
+ * Implementation of hook_node_type().
+ */
+function scheduler_node_type($op, $info) {
+  switch ($op) {
+    case 'delete':
+      $variables = array();
+      $variables[] = "scheduler_publish_enable_" . $info->type;
+      $variables[] = "scheduler_publish_touch_" . $info->type;
+      $variables[] = "scheduler_publish_required_" . $info->type;
+      $variables[] = "scheduler_publish_revision_" . $info->type;
+      $variables[] = "scheduler_unpublish_enable_" . $info->type;
+      $variables[] = "scheduler_unpublish_required_" . $info->type;
+      $variables[] = "scheduler_unpublish_revision_" . $info->type;
+      foreach ($variables as $variable) {
+        variable_del($variable);
+      }
+      break;
   }
 }
 
