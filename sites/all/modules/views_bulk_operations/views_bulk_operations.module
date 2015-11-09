@@ -942,6 +942,7 @@ function views_bulk_operations_views_bulk_operations_object_info() {
       'oid' => 'uid',
       'title' => 'name',
       'context' => 'account',
+      'access' => '_views_bulk_operations_user_access',
       'hook' => 'user',
       'normalize' => '_views_bulk_operations_normalize_user_context',
     ),
@@ -951,6 +952,7 @@ function views_bulk_operations_views_bulk_operations_object_info() {
       'load' => '_comment_load',
       'oid' => 'cid',
       'title' => 'subject',
+      'access' => '_views_bulk_operations_comment_access',
       'hook' => 'comment',
       'normalize' => '_views_bulk_operations_normalize_comment_context',
     ),
@@ -977,6 +979,20 @@ function views_bulk_operations_views_bulk_operations_object_info() {
     ),
   );
   return $object_info;
+}
+
+/**
+ * Access function for objects of type 'user'.
+ */
+function _views_bulk_operations_user_access($op, $user, $account = NULL) {
+  return user_access('access user profiles', $account);
+}
+
+/**
+ * Access function for objects of type 'comments'.
+ */
+function _views_bulk_operations_comment_access($op, $comment, $account = NULL) {
+  return user_access('access comments', $account);
 }
 
 /**
