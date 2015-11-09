@@ -1,4 +1,4 @@
-// $Id: ddblock.js,v 1.3 2009/02/20 16:09:18 ppblaauw Exp $
+// $Id$
 
 /**
   * Set image settings
@@ -167,9 +167,7 @@ Drupal.behaviors.ddblockCycle = function (context) {
       //set event which drives the pager navigation
       options.pagerEvent = pagerEvent;
       if (pagerEvent == 'mouseover' || pagerEvent == 'click') {
-        //options.fastOnEvent = true;
-        // fastOnEvent=true disallows the transition when the pager is clicked. -dadick
-        options.fastOnEvent = false;
+        options.fastOnEvent = true;
         options.pauseOnPagerHover = true;
       }
 
@@ -271,3 +269,4 @@ Drupal.behaviors.ddblockCycle = function (context) {
     i++;
   }
 };
+

@@ -1,5 +1,5 @@
 <?php
-// $Id: ddblock.admin.inc,v 1.4 2008/10/30 01:05:44 ppblaauw Exp $
+// $Id$
 
 /**
  * @file

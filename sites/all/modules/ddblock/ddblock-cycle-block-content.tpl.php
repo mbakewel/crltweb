@@ -1,5 +1,5 @@
 <?php
-// $Id: ddblock-cycle-block-content.tpl.php,v 1.3 2009/02/20 16:09:18 ppblaauw Exp $ 
+// $Id$ 
 
 /**
  * @file

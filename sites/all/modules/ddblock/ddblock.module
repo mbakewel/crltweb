@@ -1,5 +1,5 @@
 <?php
-// $Id: ddblock.module,v 1.10 2009/02/26 14:18:29 ppblaauw Exp $
+// $Id$
 
 
 /**
@@ -1912,12 +1912,8 @@ function _ddblock_get_image_array($imagepath, $order, $max_image) {
  *   An array containing the teaser of nodes for the dynamic display block
  */
 function _ddblock_get_content_array($content_type, $nodes, $node_body_teaser) {
+  $sql = db_rewrite_sql("SELECT n.nid FROM {node} n WHERE status=1 AND type='%s' AND nid='%s'");
 
-  $sql = "SELECT nid ".
-         "FROM {node} ".
-         "WHERE status = 1 ".
-         "AND type = '%s' ".
-         "AND nid = '%s' ";
   $results = db_query($sql, $content_type, $nodes);
 
   $selected_nodes = array();
@@ -1942,11 +1938,8 @@ function _ddblock_get_content_array($content_type, $nodes, $node_body_teaser) {
  *   An array containing node id's and node titles.
  */
 function _ddblock_get_content_type_nodes($content_type) {
+  $sql = db_rewrite_sql("SELECT n.nid FROM {node} n WHERE status=1 AND type='%s'");
 
-  $sql = "SELECT nid ".
-         "FROM {node} ".
-         "WHERE status=1 ".
-         "AND type='%s' ";
   $results = db_query($sql, $content_type);
 
   $selected_nodes = array();

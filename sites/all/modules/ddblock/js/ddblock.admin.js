@@ -1,4 +1,4 @@
-// $Id: ddblock.admin.js,v 1.4 2009/02/26 14:18:30 ppblaauw Exp $
+// $Id$
 
 /**
  * Show/hide advanced settings sections on the ddblock instance settings page.
