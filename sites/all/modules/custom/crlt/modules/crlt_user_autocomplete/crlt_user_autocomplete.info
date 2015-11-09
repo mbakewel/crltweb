@@ -1,0 +1,5 @@
+name = CRLT User Autocomplete Fix
+description = Fixes Drupal 6.x Javascript alert pop-up when dynamic autocomplete fails
+core = 6.x
+package = CRLT
+dependencies[] = jsalter

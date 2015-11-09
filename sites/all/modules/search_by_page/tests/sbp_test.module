@@ -1,0 +1,316 @@
+<?php
+
+/**
+ * @file
+ * Module file for Search by Page testing.
+ *
+ * This module does the following:
+ * - Implements a couple of hooks, for unit testing of functions in the main
+ *   Search by Page API infrastructure.
+ * - Sets up a couple of content types and a "private" flag for content,
+ *   for functional testing of the Search by Page Nodes module.
+ * - Sets up paths that contain content, for functional testing of the
+ *   Search by Page Paths module.
+ *
+ * @ingroup search_by_page
+ */
+
+/**
+ * Implementation of hook_db_rewrite_sql().
+ *
+ * Ensures that there is something to look for in the join/where for testing
+ * the search_by_page_unique_rewrite function, but only during that one test.
+ */
+function sbp_test_db_rewrite_sql($query, $primary_table, $primary_field) {
+  if ( $primary_table == 'abc_n' ) {
+    return array(
+      'join' => 'INNER JOIN {node_access} na ON na.nid = abc_n.nid',
+      'where' => 'na.grant_view >= 1'
+    );
+  }
+
+  return array('', '');
+}
+
+/**
+ * Implementation of hook_sbp_excerpt_match().
+ *
+ * For testing of the search_by_page_excerpt() function.
+ */
+function sbp_test_sbp_excerpt_match( $key, $text, $offset, $boundary) {
+  // Find the root form of the keyword -- in this simple example,
+  // all but the last 3 characters.
+  $key = drupal_substr( $key, 0, -3);
+  if ( drupal_strlen( $key ) < 3 ) {
+    return FALSE;
+  }
+
+  // Look for this modified key at the start of a word.
+
+  $match = array();
+  if (!preg_match('/'. $boundary . $key . '/iu', $text, $match, PREG_OFFSET_CAPTURE, $offset)) {
+    // didn't match our modified key.
+    return FALSE;
+  }
+
+  // If we get here, we have a match. Find the end of the word we
+  // actually matched, so it can be highlighted.
+  $pos = $match[0][1];
+  if (preg_match('/' . $boundary . '/iu', $text, $match, PREG_OFFSET_CAPTURE,
+      $pos + drupal_strlen($key))) {
+    $keyfound = drupal_substr($text, $pos, $match[0][1] - $pos);
+  }
+
+  return array('where' => $pos, 'keyword' => $keyfound);
+
+}
+
+/**
+ * Implementation of hook_perm().
+ *
+ * Sets up permissions for this module.
+ */
+function sbp_test_perm() {
+  return array( 'view test private content' );
+}
+
+/**
+ * Implementation of hook_node_access_records().
+ *
+ * Sets up node access for testing purposes. If a node is marked
+ * "test_private", it is only available to users with
+ * 'view test private content' permissions. Code taken form the
+ * Node Access Example module on drupal.org.
+ */
+function sbp_test_node_access_records( $node ) {
+  // Only restrict access to nodes marked private
+  if ( isset($node->test_private) && $node->test_private ) {
+    $grants = array();
+    $grants[] = array(
+      'realm' => 'sbp_test',
+      'gid' => 888,
+      'grant_view' => TRUE,
+      'grant_update' => FALSE,
+      'grant_delete' => FALSE,
+      'priority' => 999,
+    );
+
+    return $grants;
+  }
+}
+
+/**
+ * Implementation of hook_node_grants().
+ *
+ * Sets up node access for testing purposes. If a node is marked
+ * "test_private", it is only available to users with
+ * 'view test private content' permissions. Code taken form the
+ * Node Access Example module on drupal.org.
+ */
+function sbp_test_node_grants($account, $op) {
+  $grants = array();
+  if ($op == 'view' && user_access('view test private content', $account)) {
+    $grants['sbp_test'] = array(888);
+  }
+  return $grants;
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ *
+ * Manage the "private" flag on nodes. Code taken form the
+ * Node Access Example module on drupal.org.
+ */
+function sbp_test_nodeapi(&$node, $op, $arg = 0) {
+  switch ($op) {
+    case 'load':
+      $result = db_fetch_object(db_query('SELECT * FROM {sbp_test_access} WHERE nid = %d', $node->nid));
+      $node->test_private = $result->private;
+      break;
+    case 'delete':
+      db_query('DELETE FROM {sbp_test_access} WHERE nid = %d', $node->nid);
+      break;
+    case 'insert':
+      if (!isset($node->test_private)) {
+        $node->test_private = FALSE;
+      }
+      db_query('INSERT INTO {sbp_test_access} (nid, private) VALUES (%d, %d)', $node->nid, $node->test_private);
+      break;
+    case 'update':
+      if (!isset($node->test_private)) {
+        $node->test_private = FALSE;
+      }
+      db_query('UPDATE {sbp_test_access} SET private = %d WHERE nid = %d', $node->test_private, $node->nid);
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_node_info().
+ *
+ * Defines two node types, so that they can be set up for searching or not
+ * searching.
+ */
+function sbp_test_node_info() {
+  return array(
+    'sbp_indexed' => array(
+      'name' => t( 'SBP Indexed' ),
+      'module' => 'sbp_test',
+      'description' => t('Content to be indexed for searching in tests'),
+    ),
+    'sbp_hidden' => array(
+      'name' => t( 'SBP Hidden' ),
+      'module' => 'sbp_test',
+      'description' => t('Content not to be indexed for searching in tests'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ *
+ * Sets up pages that can be rendered and searched.
+ */
+function sbp_test_menu() {
+
+  $items = array();
+
+  $items['sbp_test_priv_page'] = array(
+    'title' => 'Search by Page private page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_priv_page',
+    'access arguments' => array( 'view test private content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  $items['sbp_test_pub_page'] = array(
+    'title' => 'Search by Page public page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_pub_page',
+    'access arguments' => array( 'access content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  $items['sbp_test_another_page'] = array(
+    'title' => 'Search by Page another Page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_another_page',
+    'access arguments' => array( 'access content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  $items['sbp_test_queried_page'] = array(
+    'title' => 'Search by Page queried Page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_queried_page',
+    'access arguments' => array( 'access content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  $items['sbp_test_exclude_page'] = array(
+    'title' => 'Search by Page exclude Page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_exclude_page',
+    'access arguments' => array( 'access content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  $items['sbp_test_output_page'] = array(
+    'title' => 'Search by Page output Page',
+    'description' => 'Test content',
+    'page callback' => 'sbp_test_make_output_page',
+    'access arguments' => array( 'access content' ),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback function for path 'sbp_test_priv_page'.
+ */
+function sbp_test_make_priv_page() {
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<ul>' .
+    '<li>' . t( 'Pine' ) . '</li>' .
+    '<li>' . t( 'Spruce' ) . '</li>' .
+    '</ul>';
+
+}
+
+/**
+ * Page callback function for path 'sbp_test_pub_page'.
+ */
+function sbp_test_make_pub_page() {
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<ul>' .
+    '<li>' . t( 'Oak' ) . '</li>' .
+    '<li>' . t( 'Maple' ) . '</li>' .
+    '</ul>';
+
+}
+
+/**
+ * Page callback function for path 'sbp_test_another_page'.
+ */
+function sbp_test_make_another_page() {
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<ul>' .
+    '<li>' . t( 'Apple' ) . '</li>' .
+    '<li>' . t( 'Pear' ) . '</li>' .
+    '</ul>';
+}
+
+/**
+ * Page callback function for path 'sbp_test_output_page'.
+ *
+ * This page intentionally does some things designed to screw up the
+ * Search by Page output:
+ * - Sets the page title.
+ * - Sets the breadcrumb.
+ * - Sets the active trail.
+ * - Prints some output instead of just returning output.
+ */
+function sbp_test_make_output_page() {
+
+  drupal_set_title('wrong page title');
+  print "wrong information printed";
+  drupal_set_breadcrumb(array(l('wrong breadcrumb', '<front>'), l('wrong breadcrumb 2', 'sbp_test_pub_page')));
+
+  $trail = menu_get_active_trail();
+  $i = 1;
+  foreach($trail as $item) {
+    $item['title'] = "wrong trail $i";
+    $i++;
+  }
+  menu_set_active_trail($trail);
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<ul>' .
+    '<li>' . t( 'Apple' ) . '</li>' .
+    '<li>' . t( 'Pear' ) . '</li>' .
+    '</ul>';
+}
+
+/**
+ * Page callback function for path 'sbp_test_queried_page'.
+ */
+function sbp_test_make_queried_page() {
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<ul>' .
+    '<li>' . t( 'Walnut' ) . '</li>' .
+    '<li>' . t( 'Hazelnut' ) . '</li>' .
+    '</ul>';
+
+}
+
+/**
+ * Page callback function for path 'sbp_test_exclude_page'.
+ */
+function sbp_test_make_exclude_page() {
+
+  return '<h2>' . t( 'Trees' ) . '</h2>' . '<tagtoexclude><ul>' .
+    '<li>' . t( 'Poplar' ) . '</li>' .
+    '</ul></tagtoexclude><p>Cottonwood</p>';
+
+}
+

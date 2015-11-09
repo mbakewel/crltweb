@@ -1,0 +1,4 @@
+; $Id$
+name = Signup Batch
+description = For entry of a list of uniqnames that have registered for or attended an event.
+core = 6.x

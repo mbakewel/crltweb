@@ -1,0 +1,6 @@
+name = CRLT Grant
+description = Custom features for the CRLT Grant content type
+core = 6.x
+package = CRLT Grants
+dependencies[] = ctools
+dependencies[] = views

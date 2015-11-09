@@ -1,0 +1,15 @@
+diff --git a/includes/webform.report.inc b/includes/webform.report.inc
+index 5f8a740..7da816e 100644
+--- a/includes/webform.report.inc
++++ b/includes/webform.report.inc
+@@ -790,7 +790,9 @@ function webform_results_download($node, $format = 'delimited', $options = array
+     db_query('INSERT INTO {webform_last_download} (nid, uid, sid, requested) VALUES (%d, %d, %d, %d)', $node->nid, $user->uid, $sid, time());
+   }
+ 
+-  exit();
++  if (!(module_exists('webform_digest') && $GLOBALS['webform_digest_send'])) {
++    exit();
++  }
+ }
+ 
+ /**

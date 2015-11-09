@@ -1,0 +1,9 @@
+Functionality to add:
+
+- Drag-and-drop re-ordering of subpages for each node type, to set node_subpages.weight
+- Add hook_help()
+	- Explain tab options: field_tabkey_tab_on to disable tag, field_tabkey_tab_title to change title
+- Add option to define the default tab
+- JS to enable/disable data sources when setting up a subpage
+- Beef up the README
+- Document hook_node_subpages_list()

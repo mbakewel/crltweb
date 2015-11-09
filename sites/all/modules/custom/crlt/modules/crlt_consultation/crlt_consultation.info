@@ -1,0 +1,4 @@
+name = CRLT Consultation
+description = The CRLT Consultation module.
+core = 6.x
+package = Other

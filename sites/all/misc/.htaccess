@@ -1,0 +1,1 @@
+RedirectMatch 301 ^/misc/autocomplete\.js /sites/all/misc/autocomplete.js

@@ -1,0 +1,398 @@
+$view = new view;
+$view->name = 'crlt_user_certificates';
+$view->description = 'Given a user, this provides all of their certificates.';
+$view->tag = 'crlt';
+$view->base_table = 'node';
+$view->core = 6;
+$view->api_version = '2';
+$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+$handler = $view->new_display('default', 'Defaults', 'default');
+$handler->override_option('fields', array(
+  'title' => array(
+    'label' => 'Certificate',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 1,
+    'exclude' => 0,
+    'id' => 'title',
+    'table' => 'node',
+    'field' => 'title',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+  'field_certificate_type_value' => array(
+    'label' => 'Type',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 1,
+    'label_type' => 'widget',
+    'format' => 'default',
+    'multiple' => array(
+      'group' => TRUE,
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_reversed' => FALSE,
+    ),
+    'exclude' => 0,
+    'id' => 'field_certificate_type_value',
+    'table' => 'node_data_field_certificate_type',
+    'field' => 'field_certificate_type_value',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+  'sid' => array(
+    'label' => 'Status',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'exclude' => 0,
+    'id' => 'sid',
+    'table' => 'workflow_node',
+    'field' => 'sid',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+  'stamp' => array(
+    'label' => 'Updated',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'date_format' => 'time ago',
+    'custom_date_format' => '1',
+    'exclude' => 0,
+    'id' => 'stamp',
+    'table' => 'workflow_node',
+    'field' => 'stamp',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+  'edit_node' => array(
+    'label' => '',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'text' => '',
+    'exclude' => 0,
+    'id' => 'edit_node',
+    'table' => 'node',
+    'field' => 'edit_node',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('sorts', array(
+  'stamp' => array(
+    'order' => 'DESC',
+    'granularity' => 'second',
+    'id' => 'stamp',
+    'table' => 'workflow_node',
+    'field' => 'stamp',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('arguments', array(
+  'uid' => array(
+    'default_action' => 'empty',
+    'style_plugin' => 'default_summary',
+    'style_options' => array(),
+    'wildcard' => '',
+    'wildcard_substitution' => '',
+    'title' => '%1\'s certificates',
+    'breadcrumb' => '',
+    'default_argument_type' => 'fixed',
+    'default_argument' => '',
+    'validate_type' => 'none',
+    'validate_fail' => 'not found',
+    'break_phrase' => 0,
+    'not' => 0,
+    'id' => 'uid',
+    'table' => 'users',
+    'field' => 'uid',
+    'validate_user_argument_type' => 'uid',
+    'validate_user_roles' => array(
+      2 => 0,
+      3 => 0,
+      9 => 0,
+      7 => 0,
+      4 => 0,
+      6 => 0,
+      15 => 0,
+      8 => 0,
+      12 => 0,
+      13 => 0,
+      5 => 0,
+      11 => 0,
+      10 => 0,
+    ),
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+    'default_options_div_prefix' => '',
+    'default_taxonomy_tid_term_page' => 0,
+    'default_taxonomy_tid_node' => 0,
+    'default_taxonomy_tid_limit' => 0,
+    'default_taxonomy_tid_vids' => array(
+      6 => 0,
+      7 => 0,
+      1 => 0,
+      5 => 0,
+    ),
+    'default_argument_user' => 0,
+    'default_argument_fixed' => '',
+    'default_argument_php' => '',
+    'validate_argument_node_type' => array(
+      'poll' => 0,
+      'certificate' => 0,
+      'consultation' => 0,
+      'crltplayers' => 0,
+      'events' => 0,
+      'gtc_intro_workshop_response' => 0,
+      'guest_post' => 0,
+      'mentorship_faculty_profile' => 0,
+      'page' => 0,
+      'person' => 0,
+      'story' => 0,
+      'teaching_award' => 0,
+      'tech_tools' => 0,
+      'webform' => 0,
+    ),
+    'validate_argument_node_access' => 0,
+    'validate_argument_nid_type' => 'nid',
+    'validate_argument_vocabulary' => array(
+      6 => 0,
+      7 => 0,
+      1 => 0,
+      5 => 0,
+    ),
+    'validate_argument_type' => 'tid',
+    'validate_argument_transform' => 0,
+    'validate_user_restrict_roles' => 0,
+    'validate_argument_signup_status' => 'any',
+    'validate_argument_signup_node_access' => 0,
+    'validate_argument_php' => '',
+  ),
+));
+$handler->override_option('filters', array(
+  'type' => array(
+    'operator' => 'in',
+    'value' => array(
+      'certificate' => 'certificate',
+    ),
+    'group' => '0',
+    'exposed' => FALSE,
+    'expose' => array(
+      'operator' => FALSE,
+      'label' => '',
+    ),
+    'id' => 'type',
+    'table' => 'node',
+    'field' => 'type',
+    'override' => array(
+      'button' => 'Override',
+    ),
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('access', array(
+  'type' => 'none',
+));
+$handler->override_option('cache', array(
+  'type' => 'none',
+));
+$handler->override_option('footer', '<table>
+	<tbody>
+		<tr>
+			<td colspan="2">
+				<h4>
+					Submit new documentation for:</h4>
+			</td>
+			<td rowspan="2">
+				<p><img alt="" src="/sites/default/files/images/myportfolio1_0.jpg" style="width: 200px; height: 200px; border-width: 2px; border-style: solid; float: left;" /></p>
+			</td>
+		</tr>
+		<tr>
+			<td valign="top" width="250px">
+				<div>
+					<p>A. <a href="/node/add/certificate?field_certificate_type=A" target="_blank">Departmental GSI orientation</a></p>
+					<p>B. Learning about teaching</p>
+					<div class="rteindent1" style="line-height:0.9em;">
+						<p><span>1. Departmental Workshop...</span></p>
+						<p>...<a href="/node/add/certificate?field_certificate_type=B1" target="_blank">on teaching</a></p>
+						<p>...<a href="/node/add/certificate?field_certificate_type=B1_mc" target="_blank">on multicultural, inclusive practices</a></p>
+						<p>...<a href="/node/add/certificate?field_certificate_type=B1_it" target="_blank">on instructional technology</a></p>
+					</div>
+					<p class="rteindent1">2. <a href="/node/add/certificate?field_certificate_type=B2" target="_blank">Course</a></p>
+				</div>
+			</td>
+			<td style="padding-left:10px;" valign="top">
+				<p>C. Instructional practice</p>
+				<p class="rteindent1">1.&nbsp;<a href="/node/add/certificate?field_certificate_type=C1" style="font-size: 12px;" target="_blank">GSI appointment</a></p>
+				<p class="rteindent1">2.&nbsp;<a href="/node/add/certificate?field_certificate_type=C2" style="font-size: 12px;" target="_blank">Faculty or GSM consultation</a></p>
+				<p><span style="font-size: 12px;">D.&nbsp;</span><a href="/node/add/certificate?field_certificate_type=D" style="font-size: 12px;" target="_blank">Mentorship on teaching</a></p>
+				<p><span style="font-size: 12px;">E.&nbsp;</span><a href="/consultations/teaching-philosophies-statements" style="font-size: 12px;" target="_blank">Reflection: teaching philosophy statement</a></p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p>The status of each submission (&ldquo;under review&rdquo;, &ldquo;approved&rdquo;, &quot;revision requested&quot; or &ldquo;denied&rdquo;) will appear below its title. The status for requirements C-E also will show whether required faculty confirmation has been received.&nbsp;Click on the view link to receive feedback.&nbsp;Expect time lags for status updates. Submissions for A-D are reviewed once per month. E is reviewed bi-weekly.&nbsp;</p>
+');
+$handler->override_option('footer_format', '3');
+$handler->override_option('footer_empty', 1);
+$handler->override_option('empty', 'Sorry, no certificates were found!');
+$handler->override_option('empty_format', '2');
+$handler->override_option('style_plugin', 'table');
+$handler->override_option('style_options', array(
+  'grouping' => '',
+  'override' => 1,
+  'sticky' => 0,
+  'order' => 'asc',
+  'summary' => '',
+  'columns' => array(
+    'title' => 'title',
+  ),
+  'info' => array(
+    'title' => array(
+      'sortable' => 0,
+      'separator' => '',
+    ),
+  ),
+  'default' => '-1',
+));
+$handler = $view->new_display('page', 'Page', 'page_1');
+$handler->override_option('path', 'user/%/certificates');
+$handler->override_option('menu', array(
+  'type' => 'tab',
+  'title' => 'Certificates',
+  'description' => '',
+  'weight' => '5',
+  'name' => 'primary-links',
+));
+$handler->override_option('tab_options', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'navigation',
+));
+

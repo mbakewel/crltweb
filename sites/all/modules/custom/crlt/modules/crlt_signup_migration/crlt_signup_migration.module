@@ -1,0 +1,351 @@
+<?php
+
+function crlt_signup_migration_menu() {
+  $items = array();
+  $items['crlt/signup/migration-batch'] = array(
+    'title' => 'Signup Migration Batch',
+    'page callback' => 'crlt_signup_migration_batch',
+    'access arguments' => array('administer users')
+  );
+  $items['crlt/signup/post-migration-batch'] = array(
+    'title' => 'Signup Post Migration Batch',
+    'page callback' => 'crlt_signup_post_migration_batch',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+function crlt_signup_migration_batch() {
+  return "Batch already ran!";
+  $sql = " SELECT sid
+    FROM {signup_log} sl
+    INNER JOIN {node} n ON sl.nid = n.nid
+    INNER JOIN {content_type_events} cte ON n.nid = cte.nid
+    WHERE
+      n.vid = cte.vid AND
+      cte.field_eligible_for_certificate_value <> 'Not eligible for Certificate' AND
+      sl.attended = 1
+    ORDER BY sl.sid ASC
+     ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_signup_migration_batch_process', array($data->sid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_signup_migration_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_signup_migration_batch_process($sid, &$context) {
+  global $user;
+  // Load the data for this signup.
+  $sql = " SELECT * FROM {signup_log} WHERE sid = %d ";
+  $result = db_query($sql, $sid);
+  $data = db_fetch_object($result);
+  $data->form_data = unserialize($data->form_data);
+  //drupal_set_message('<pre>' . print_r($data, true) . '</pre>');
+  // Load the node and user account related to this signup.
+  $node = node_load($data->nid);
+  if (!$node) { drupal_set_message("Failed to load node ({$data->nid}) on signup ({$sid}).", 'warning'); return; }
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  $account = user_load($data->uid);
+  if (!$user) { drupal_set_message("Failed to load user ({$data->uid}) on signup ({$sid}).", 'warning'); return; }
+  //drupal_set_message('<pre>' . print_r($account, true) . '</pre>');
+  // If the event node is not marked as eligible for certificate, skip it. If it is eligible, figure out
+  // the certificate type. There is one instance where two certs need to be created, so mark it when it needs to happen.
+  $type = null;
+  $dual_certificates = FALSE;
+  switch ($node->field_eligible_for_certificate[0]['value']) {
+    case 'Eligible for Graduate Teacher Certificate':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2':
+      $type = 'B1';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Instructional Technology':
+    case 'Eligible for Graduate Teacher Certificate - Instructional Technology':
+      $type = 'B1_it';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Multicultural Teaching':
+    case 'Eligible for Graduate Teacher Certificate - Multicultural Teaching':
+      $type = 'B1_mc';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3 ':
+      $type = 'B2';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement D': $type = 'D'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A': $type = 'A'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A and B3':
+      $dual_certificates = TRUE;
+      $type = 'A';
+      break;
+    case 'Not eligible for Certificate':
+      return;
+      break;
+    default:
+      drupal_set_message(
+        "Unknown certificate eligility ({$node->field_eligible_for_certificate[0]['value']}) on " . l($node->title, "node/{$node->nid}"),
+        'warning'
+      );
+      return;
+      break; 
+  }
+  if (!$type) { return; }
+  // Start building the certificate node.
+  $certificate = new stdClass();
+  $certificate->type = 'certificate';
+  $certificate->title = "Certificate - $type";
+  $certificate->uid = $account->uid;
+  $created = isset($data->signup_time) ? $data->signup_time : time();
+  $certificate->created = $created;
+  $certificate->workflow_stamp = $certificate->created;
+  $certificate->field_certificate_type = array(array('value' => $type));
+  $certificate->field_certificate_sponsor_unit = array(array('value' => 'crlt'));
+  $certificate->body = "<p>{$node->title}</p>";
+  if (isset($data->form_data['comments']) && $data->form_data['comments'] != '') {
+    $certificate->body .= "<p>{$data->form_data['comments']}</p>";
+  }
+  $certificate->field_certificate_source = array(array('value' => 'signup'));
+  $certificate->field_certificate_source_id = array(array('value' => $node->nid));
+  // Figure out the term the event took place in.
+  if (isset($node->field_event_dates[0]['value'])) {
+    $date = $node->field_event_dates[0]['value'];
+    $strtotime = strtotime($date);
+    $year = date('y', $strtotime);
+    $month = date('n', $strtotime);
+    $label = null;
+    if ($month >= 1 && $month <= 4) { $label = 'Winter'; }
+    else if ($month >= 5 && $month <= 7) { $label = 'Spring/Summer'; }
+    else if ($month >= 8 && $month <= 12) { $label = 'Fall'; }
+    if ($label) {
+      $label = $year . " " . $label;
+      $value = crlt_field_allowed_value_key_from_label('field_certificate_term', $label);
+      $certificate->field_certificate_term = array(array('value' => $value));
+    }
+  }
+  else {
+    drupal_set_message("Unknown start date for signup ({$sid}) on " . l($node->title, "node/{$node->nid}"), 'warning');
+  }
+  // Save the cert node.
+  //drupal_set_message('<pre>' . print_r($certificate, true) . '</pre>');
+  node_save($certificate);
+  // Grab the new nid and reload the node.
+  $nid = db_result(db_query(" SELECT nid FROM {node} ORDER BY nid DESC LIMIT 1 "));
+  $certificate = node_load($nid, null, TRUE);
+  // Finally, adjust the workflow state. Swap the user while doing so.
+  $current_user = $user;
+  $user = user_load(61904);
+  $certificate->workflow_stamp = $certificate->created;
+  workflow_transition($certificate, 10);
+  // If it is a dual cert, save the extra one as well.
+  if ($dual_certificate) {
+    $certificate->title = "Certificate - B2";
+    $certificate->field_certificate_type = array(array('value' => 'B2'));
+    node_save($certificate);
+    // Grab the new nid and reload the node.
+    $nid = db_result(db_query(" SELECT nid FROM {node} ORDER BY nid DESC LIMIT 1 "));
+    $certificate = node_load($nid, null, TRUE);
+    drupal_set_message(
+      "Saved a dual certificate for signup ({$sid}) with user " . l($account->name, "user/{$account->uid}")
+    );
+    // Adjust the workflow.
+    $certificate->workflow_stamp = $certificate->created;
+    workflow_transition($certificate, 10);
+  }
+  // Swap back the user.
+  $user = $current_user;
+  // Update the context.
+  $context['message'] = t('Processing @sid', array('@sid' => $sid));
+}
+
+function crlt_signup_migration_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/signup/migration-batch'));
+}
+
+/**
+ * Used to create certificates for all the signups that took place after the
+ * site maker signup data migration, and before the event signup synchronization
+ * code was added to the live site.
+ */
+function crlt_signup_post_migration_batch() {
+  return "Batch already ran!";
+  $sql = " select s.sid from signup_log s
+inner join node n on n.nid = s.nid and n.type = 'Events'
+inner join content_type_events c on c.vid = n.vid and c.field_eligible_for_certificate_value in ('Eligible for Graduate Teacher Certificate - Requirement B2','Eligible for Graduate Teacher Certificate - Requirement B2, Instructional Technology','Eligible for Graduate Teacher Certificate - Requirement B2, Multicultural Teaching','Eligible for Graduate Teacher Certificate - Requirement B3 ','Eligible for Graduate Teacher Certificate - Requirement A','Eligible for Graduate Teacher Certificate - Requirement A and B3')
+inner join users u on u.uid = s.uid
+left join profile_values pv on pv.uid = u.uid and pv.fid = 2
+where attended = 1 and
+(pv.value = 'Graduate Student' /*or (pv.value is null and get_signup_field('status',form_data) = 'Graduate Student')*/)
+and not exists (
+select 'x'
+from content_type_certificate cert, node n2 
+where cert.field_certificate_source_id_value = n.nid 
+and cert.vid = n2.vid 
+and n2.uid = s.uid)
+     ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_signup_post_migration_batch_process', array($data->sid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_signup_post_migration_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_signup_post_migration_batch_process($sid, &$context) {
+  global $user;
+
+  // Load the data for this signup.
+  $sql = " SELECT * FROM {signup_log} WHERE sid = %d ";
+  $result = db_query($sql, $sid);
+  $data = db_fetch_object($result);
+  $data->form_data = unserialize($data->form_data);
+  //drupal_set_message('<pre>' . print_r($data, true) . '</pre>');
+  // Load the node and user account related to this signup.
+  $node = node_load($data->nid);
+  if (!$node) { drupal_set_message("Failed to load node ({$data->nid}) on signup ({$sid}).", 'warning'); return; }
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  $account = user_load($data->uid);
+  if (!$account) { drupal_set_message("Failed to load user ({$data->uid}) on signup ({$sid}).", 'warning'); return; }
+  //drupal_set_message('<pre>' . print_r($account, true) . '</pre>');
+  // If the event node is not marked as eligible for certificate, skip it. If it is eligible, figure out
+  // the certificate type. There is one instance where two certs need to be created, so mark it when it needs to happen.
+  $type = null;
+  $dual_certificates = FALSE;
+  switch ($node->field_eligible_for_certificate[0]['value']) {
+    case 'Eligible for Graduate Teacher Certificate':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2':
+      $type = 'B1';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Instructional Technology':
+    case 'Eligible for Graduate Teacher Certificate - Instructional Technology':
+      $type = 'B1_it';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Multicultural Teaching':
+    case 'Eligible for Graduate Teacher Certificate - Multicultural Teaching':
+      $type = 'B1_mc';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3 ':
+      $type = 'B2';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement D': $type = 'D'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A': $type = 'A'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A and B3':
+      $dual_certificates = TRUE;
+      $type = 'A';
+      break;
+    case 'Not eligible for Certificate':
+      return;
+      break;
+    default:
+      drupal_set_message(
+        "Unknown certificate eligility ({$node->field_eligible_for_certificate[0]['value']}) on " . l($node->title, "node/{$node->nid}"),
+        'warning'
+      );
+      return;
+      break; 
+  }
+  if (!$type) { return; }
+  // Start building the certificate node.
+  $certificate = new stdClass();
+  $certificate->type = 'certificate';
+  $certificate->title = "Certificate - $type";
+  $certificate->uid = $account->uid;
+  $created = isset($data->signup_time) ? $data->signup_time : time();
+  $certificate->created = $created;
+  $certificate->workflow_stamp = $certificate->created;
+  $certificate->field_certificate_type = array(array('value' => $type));
+  $certificate->field_certificate_sponsor_unit = array(array('value' => 'crlt'));
+  $certificate->body = "<p>{$node->title}</p>";
+  if (isset($data->form_data['comments']) && $data->form_data['comments'] != '') {
+    $certificate->body .= "<p>{$data->form_data['comments']}</p>";
+  }
+  $node->field_certificate_agreement = array(array('value' => 1));
+  $certificate->field_certificate_source = array(array('value' => 'signup'));
+  $certificate->field_certificate_source_id = array(array('value' => $node->nid));
+  // Figure out the term the event took place in.
+  if (isset($node->field_event_dates[0]['value'])) {
+    $date = $node->field_event_dates[0]['value'];
+    $strtotime = strtotime($date);
+    $year = date('y', $strtotime);
+    $month = date('n', $strtotime);
+    $label = null;
+    if ($month >= 1 && $month <= 4) { $label = 'Winter'; }
+    else if ($month >= 5 && $month <= 7) { $label = 'Spring/Summer'; }
+    else if ($month >= 8 && $month <= 12) { $label = 'Fall'; }
+    if ($label) {
+      $label = $year . " " . $label;
+      $value = crlt_field_allowed_value_key_from_label('field_certificate_term', $label);
+      $certificate->field_certificate_term = array(array('value' => $value));
+    }
+  }
+  else {
+    drupal_set_message("Unknown start date for signup ({$sid}) on " . l($node->title, "node/{$node->nid}"), 'warning');
+  }
+  // Save the cert node.
+  //drupal_set_message('<pre>' . print_r($certificate, true) . '</pre>');
+  node_save($certificate);
+  // Grab the new nid and reload the node.
+  $nid = db_result(db_query(" SELECT nid FROM {node} ORDER BY nid DESC LIMIT 1 "));
+  $certificate = node_load($nid, null, TRUE);
+  drupal_set_message("Created certificate: " . l($nid, "node/$nid"));
+  // Finally, adjust the workflow state. Swap the user while doing so.
+  $current_user = $user;
+  $user = user_load(61904);
+  $certificate->workflow_stamp = $certificate->created;
+  $certificate->workflow_comment = "Approved by batch migration on 2014-07-01";
+  workflow_transition($certificate, 10);
+  // If it is a dual cert, save the extra one as well.
+  if ($dual_certificate) {
+    $certificate->title = "Certificate - B2";
+    $certificate->field_certificate_type = array(array('value' => 'B2'));
+    node_save($certificate);
+    // Grab the new nid and reload the node.
+    $nid = db_result(db_query(" SELECT nid FROM {node} ORDER BY nid DESC LIMIT 1 "));
+    $certificate = node_load($nid, null, TRUE);
+    drupal_set_message(
+      "Saved a dual certificate for signup ({$sid}) with user " . l($account->name, "user/{$account->uid}")
+    );
+    // Adjust the workflow.
+    $certificate->workflow_stamp = $certificate->created;
+    workflow_transition($certificate, 10);
+  }
+  // Swap back the user.
+  $user = $current_user;
+  
+  // Update the context.
+  $context['message'] = t('Processing @source_id', array('@source_id' => $source_id));
+}
+
+function crlt_signup_post_migration_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/signup/post-migration-batch'));
+}
+

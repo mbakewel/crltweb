@@ -1,0 +1,65 @@
+<?php // $Id$
+
+/**
+ * @file
+ * Webform MySQL Views module install/schema hooks.
+ */
+
+// Define the minimum required MySQL version needed by this module.
+define('WEBFORM_MYSQL_VIEWS_MINIMUM_MYSQL', '5.0');
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function webform_mysql_views_uninstall() {
+  //Get list of views in the system, if any
+  $views = variable_get('webform_mysql_views_views', array());
+  foreach ($views as $key => $val) {
+    db_query("DROP VIEW {%s}". $val);
+  }
+
+  //Delete module variables
+  variable_del('webform_mysql_views_meets_reqs');
+  variable_del('webform_mysql_views_views');
+}
+
+/**
+ * Implementation of hook_requirements().
+ *
+ * Check Drupal environment for module requirements
+ */
+function webform_mysql_views_requirements($phase) {
+  global $db_url;
+
+  $t = get_t();
+  $requirements = array();
+
+  // Cope with a site that uses multiple db_urls.
+  if (!is_array($db_url)) {
+    $_dburl = $db_url;
+  }
+  else {
+    $_dburl = $db_url['default'];
+  }
+
+  $requirements['webform_mysql_views'] = array(
+    'title' => $t('Webform MySQL Views'),
+  );
+
+  if (substr($_dburl, 0, 5) != 'mysql') {
+    $requirements['webform_mysql_views']['severity'] = REQUIREMENT_ERROR;
+    $requirements['webform_mysql_views']['value'] = $t('Unsupported.');
+    $requirements['webform_mysql_views']['description'] = $t('This module is only compatible with the MySQL backend.');
+  }
+  else if (version_compare(db_version(), WEBFORM_MYSQL_VIEWS_MINIMUM_MYSQL) < 0) {
+    $requirements['webform_mysql_views']['severity'] = REQUIREMENT_ERROR;
+    $requirements['webform_mysql_views']['value'] = $t('Unsupported.');
+    $requirements['webform_mysql_views']['description'] = $t('Your MySQL Server is too old. Webform MySQL Views requires at least MySQL %minimum but you are using %version.', array('%minimum' => WEBFORM_MYSQL_VIEWS_MINIMUM_MYSQL, '%version' => db_version()));
+  }
+  else {
+    $requirements['webform_mysql_views']['severity'] = REQUIREMENT_OK;
+    $requirements['webform_mysql_views']['value'] = $t('You are using MySQL version %version.', array('%version' => db_version()));
+  }
+
+  return $requirements;
+}

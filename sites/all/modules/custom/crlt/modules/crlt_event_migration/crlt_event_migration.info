@@ -1,0 +1,4 @@
+name = CRLT Event Migration
+description = The CRLT Event Migration module.
+core = 6.x
+package = Other

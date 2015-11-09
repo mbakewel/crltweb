@@ -1,0 +1,361 @@
+<?php
+/**
+ * Implements menu hook, registering module URL(s)
+ *
+ */
+function crlt_grant_application_migration_menu() {
+	$items = array();
+	$items['admin/crlt/grant-migration/migrate'] = array(
+		'title' => 'CRLT Grant Application Migration',
+		'access arguments' => array( 'administer content types' ),
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array( 'crlt_grant_application_migration_form' ),
+		'file' => 'crlt_grant_application_migration_form.inc'
+	);
+	return $items;
+}
+
+/**
+ * Purge existing SiteMaker Grant Application nodes
+ *
+ * @return void
+ */
+function _crlt_grant_application_migration_purge(  ) {
+	// Retreive View results for Grant Application nodes with SiteMaker ID field content
+	$sitemaker_grant_applications = views_get_view_result( 'crlt_grant_applications_migrated' );
+	if ( count( $sitemaker_grant_applications ) ) {
+		// Previously migrated nodes found
+		drupal_set_message( t( 'Purging @count existing migrated SiteMaker Grant Applications.', array( '@count' => count( $sitemaker_grant_applications ) ) ) );
+		// Delete each of the nodes in the View results
+		foreach ( $sitemaker_grant_applications as $sitemaker_grant_application ) {
+			// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $sitemaker_grant_application, TRUE ) ) );
+			// Delete attached PDF file
+			db_query(
+				'DELETE FROM {files} WHERE fid = "%s"',
+				$sitemaker_grant_application->node_data_field_sitemaker_id_field_grant_application_assets_fid
+			);
+			// Delete node
+			node_delete( $sitemaker_grant_application->nid );
+		}
+	} else {
+		// No previously migrated nodes found
+		drupal_set_message( t( 'No existing migrated SiteMaker Grant Applications to purge.' ) );
+	}
+}
+
+/**
+ * Add single Grant Application node from SiteMaker record
+ *
+ * @param unknown $sitemaker_record array Associative array of SiteMaker record data
+ * @return Drupal node. FALSE if node creation fails.
+ */
+function _crlt_grant_application_migration_add_node( $sitemaker_record ) {
+	// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $sitemaker_record, TRUE ) ) );
+	// Build the certificate node.
+	$node = new stdClass();
+	$node->type = 'grant_application';
+	// uid < Created By
+	$node->uid = _crlt_grant_application_migration_get_user( $sitemaker_record['Created By'] );
+	// created < Date Created
+	$node->created = strtotime( $sitemaker_record['Date Created'] );
+	$node->workflow_stamp = $node->created;
+	// title < projecttitle
+	$node->title = $sitemaker_record['projecttitle'];
+	// always flag for email suppression
+	$node->field_grant_app_suppress_request = array( array( 'value' => 1 ) );
+	// field_sitemaker_id < sitemaker_id
+	$node->field_sitemaker_id = array( array( 'value' => trim( trim( $sitemaker_record['sitemaker_id'] ), '/' ) ) );
+	// field_grant < granttitle
+	$node->field_grant = array( array(
+			'nid' => _crlt_grant_application_migration_get_grant( $sitemaker_record['granttitle'] )
+		) );
+	// field_grant_application_year < year
+	$node->field_grant_application_year = array( array( 'value' => $sitemaker_record['year'] ) );
+	// field_grant_application_users[0] < editoruniqname
+	$node->field_grant_application_users = array( array(
+			'uid' => _crlt_grant_application_migration_get_user( $sitemaker_record['editoruniqname'] )
+		) );
+	// field_grant_application_dates < startdate - enddate
+	$node->field_grant_application_dates = array( array(
+			'timezone' => 'America/Detroit',
+			'timezone_db' => 'America/Detroit',
+			'date_type' => 'date',
+		) );
+	if(FALSE!==strtotime( $sitemaker_record['startdate'] )) {
+		// Has start date
+		$node->field_grant_application_dates[0]['value'] = date( 'Y-m-d\TH:i:s', strtotime( $sitemaker_record['startdate'] ) );
+	} else {
+		// No start date
+		// Default: Use the start of the academic year, 9/1/YEAR
+		$node->field_grant_application_dates[0]['value'] = date( 'Y-m-d\TH:i:s', strtotime( $sitemaker_record['year'] . '-09-01' ) );
+	}
+	if(FALSE!==strtotime( $sitemaker_record['enddate'] )) {
+		// Has end date
+		$node->field_grant_application_dates[0]['value2'] = date( 'Y-m-d\TH:i:s', strtotime( $sitemaker_record['enddate'] ) );
+	} else {
+		// No end date
+		// Default: Use the end of the academic year, 8/31/1+YEAR
+		$node->field_grant_application_dates[0]['value2'] = date( 'Y-m-d\TH:i:s', strtotime( 1+$sitemaker_record['year'] . '-08-31' ) );
+	}
+	// field_grant_application_overview < projectoverview
+	$node->field_grant_application_overview = array( array( 'value' => $sitemaker_record['projectoverview'] ) );
+	// field_grant_app_proj_objectives < projectobjectives
+	$node->field_grant_app_proj_objectives = array( array( 'value' => $sitemaker_record['projectobjectives'] ) );
+	// field_grant_app_proj_achievement < projectachievements
+	$node->field_grant_app_proj_achievement = array( array( 'value' => $sitemaker_record['projectachievements'] ) );
+	// field_grant_application_under < undergradstudents
+	$node->field_grant_application_under = array( array( 'value' => $sitemaker_record['undergradstudents'] ) );
+	// field_grant_app_continuation < continuation
+	$node->field_grant_app_continuation = array( array( 'value' => $sitemaker_record['continuation'] ) );
+	// field_grant_app_dissemination < dissemination
+	$node->field_grant_app_dissemination = array( array( 'value' => $sitemaker_record['dissemination'] ) );
+	// field_grant_app_colleague_advice < advice
+	$node->field_grant_app_colleague_advice = array( array( 'value' => $sitemaker_record['advice'] ) );
+	// field_grant_app_crlt_advice < confidential
+	$node->field_grant_app_crlt_advice = array( array( 'value' => $sitemaker_record['confidential'] ) );
+	// field_grant_application_graduate < graduatestudents
+	$node->field_grant_application_graduate = array( array( 'value' => $sitemaker_record['graduatestudents'] ) );
+	// field_grant_app_budget < amount
+	$node->field_grant_app_budget = array( array( 'value' => $sitemaker_record['amount'] ) );
+	// field_grant_application_users[1] < editoruniqname2
+	if ( strlen( $sitemaker_record['editoruniqname2'] ) ) {
+		$node->field_grant_application_users[] = array(
+			'uid' => _crlt_grant_application_migration_get_user( $sitemaker_record['editoruniqname2'] )
+		);
+	}
+	// field_grant_application_users[2] < editoruniqname3
+	if ( strlen( $sitemaker_record['editoruniqname3'] ) ) {
+		$node->field_grant_application_users[] = array(
+			'uid' => _crlt_grant_application_migration_get_user( $sitemaker_record['editoruniqname3'] )
+		);
+	}
+	// field_grant_application_report < reportdue
+	// MUST execute after startdate/enddate are processed, to use in default computation
+	$node->field_grant_application_report = array( array(
+			'timezone' => 'America/Detroit',
+			'timezone_db' => 'America/Detroit',
+			'date_type' => 'date',
+		) );
+	if(FALSE!==strtotime( $sitemaker_record['reportdue'] )) {
+		// Has report due date
+		$node->field_grant_application_report[0]['value'] = date( 'Y-m-d\TH:i:s', strtotime( $sitemaker_record['reportdue'] ) );
+	} elseif('TRUE'===$sitemaker_record['funded']) {
+		// No report due date, funded grant application
+		// Default ONLY for Funded: End date + 3 months
+		$enddate = $node->field_grant_application_dates[0]['value2'];
+		$node->field_grant_application_report[0]['value'] = date( 'Y-m-d\TH:i:s', strtotime( $enddate . " + 3 months" ) );
+	} else {
+		// No report due date, non-funded grant application
+		// Drop report due field
+		unset($node->field_grant_application_report);
+	}
+	// field_grant_application_chair < chairemail
+	// Try to use first portion of @([.*]\.)?umich.edu email address, discard otherwise
+	$chairemail = trim( trim( $sitemaker_record['chairemail'] ), '<>' );
+	$chairemail_rx = '/^([^@\?]+)(@[a-z\.]*umich.edu)?$/';
+	if ( preg_match( $chairemail_rx, $chairemail ) ) {
+		$chairuniqname = preg_replace( $chairemail_rx, '$1', $chairemail );
+		$node->field_grant_application_chair = array( array(
+				'uid' => _crlt_grant_application_migration_get_user( $chairuniqname )
+			) );
+	}
+	// drupal_set_message( sprintf( '<pre>field_grant_application_chair: "%s"</pre>', print_r( $node->field_grant_application_chair, TRUE ) ) );
+
+	// field_grant_application_support < supporters
+	$node->field_grant_application_support = array( array( 'value' => $sitemaker_record['supporters'] ) );
+	// field_grant_app_chair_comments < chaireval
+	$node->field_grant_app_chair_comments = array( array( 'value' => $sitemaker_record['chaireval'] ) );
+	// field_grant_app_reminders_sent < notification
+	$node->field_grant_app_reminders_sent = array( array( 'value' => 0 ) );
+	switch ( $sitemaker_record['notification'] ) {
+	case '1 request report':
+		$node->field_grant_app_reminders_sent[0]['value'] = 1;
+		break;
+	case '2 reminder':
+		$node->field_grant_app_reminders_sent[0]['value'] = 2;
+		break;
+	case '3 final reminder':
+	case 'Report entered by CRLT':
+		$node->field_grant_app_reminders_sent[0]['value'] = 3;
+		break;
+	}
+	// field_grant_application_assets < application
+	// https://www.drupal.org/node/330421
+	// - Programmatically creating FileField entries
+	$application_pdf_filename = basename( $sitemaker_record['application'] );
+	$application_pdf_filepath = file_directory_path() .'/crlt_archive/' . $application_pdf_filename;
+	// Create file object and update files table
+	$application_pdf_file            = new stdClass();
+	$application_pdf_file->filename  = basename( $application_pdf_filepath );
+	$application_pdf_file->filepath  = $application_pdf_filepath;
+	$application_pdf_file->filemime  = file_get_mimetype( $application_pdf_filepath );
+	$application_pdf_file->filesize  = filesize( $application_pdf_filepath );
+	$application_pdf_file->uid       = $node->uid;
+	$application_pdf_file->timestamp = time();
+	drupal_write_record( 'files', $application_pdf_file );
+	// drupal_set_message( sprintf( '<pre>name: %s</pre>', print_r( file_directory_path() .'/crlt_archive/' . $filename, TRUE ) ) );
+	// drupal_set_message( sprintf( '<pre>exists: %s</pre>', print_r( file_exists(file_directory_path() .'/crlt_archive/' . $filename), TRUE ) ) );
+	// $application_pdf_content = file_get_contents( $filepath );
+	// drupal_set_message( sprintf( '<pre>application_pdf_content count: %s</pre>', print_r( count($application_pdf_content)), TRUE ) ) );
+	// $application_pdf = file_save_data( $application_pdf_content, $filepath, FILE_EXISTS_REPLACE );
+	$node->field_grant_application_assets = array(
+		(array) $application_pdf_file
+	);
+	// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $application_pdf_file, TRUE ) ) );
+	// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $node, TRUE ) ) );
+
+	// Initial save for the node
+	node_save( $node );
+
+	// Get all state information for the Grant Application workflow
+	$workflow_state_id = _crlt_grant_application_migration_get_state(
+		$sitemaker_record['funded'],
+		$sitemaker_record['reportdue'],
+		$sitemaker_record['finalsubmission']
+	);
+	// Set the node's workflow state, determined above
+	workflow_transition( $node, $workflow_state_id );
+
+	// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $node, TRUE ) ) );
+}
+
+/**
+ * Get the Drupal user uid corresponding to the U Mich uniqname, creating it if needed
+ *
+ * @param unknown $uniqname string U Mich uniqname for the user
+ * @return int Drupal user uid for uniqname
+ */
+function _crlt_grant_application_migration_get_user( $uniqname ) {
+	$cache_key = '_crlt_grant_application_migration_get_user';
+	$uniqname = trim( trim( $uniqname ), '<>' );
+	$uniqname_rx = '/^([^@\?]+)(@[a-z\.]*umich.edu)?$/';
+	if ( preg_match( $uniqname_rx, $uniqname ) ) {
+		$uniqname = preg_replace( $uniqname_rx, '$1', $uniqname );
+	}
+
+	$uid = 0;
+	// Create global cache, if needed
+	if ( !isset( $GLOBALS[$cache_key] ) ) {
+		$GLOBALS[$cache_key] = array();
+	}
+	if ( isset( $GLOBALS[$cache_key][$uniqname] ) ) {
+		// Globals cache grant uid known, use it
+		$uid = $GLOBALS[$cache_key][$uniqname];
+	} else {
+		// No cached record, find uid for uniqname
+
+		$get_user_sql = " SELECT uid FROM {users} WHERE name = '%s' ";
+		$db_account = db_query( $get_user_sql, $uniqname );
+		$account = db_fetch_object( $db_account );
+		// drupal_set_message( sprintf( '<pre>Uniqname: "%s"</pre>', print_r( $uniqname, TRUE ) ) );
+		// drupal_set_message( sprintf( '<pre>**Account** %s</pre>', print_r( $account, TRUE ) ) );
+		if ( isset( $account->uid ) ) {
+			$uid = $account->uid;
+		}  else {
+			$fields = array(
+				'name' => $uniqname,
+				'mail' => $uniqname . '@umich.edu',
+				'pass' => user_password( 8 ),
+				'status' => 1
+			);
+			$account = user_save( '', $fields );
+			if ( $account ) {
+				drupal_set_message( 'Created new user (' . $uniqname . ')!' );
+			}  else {
+				// Failing to create a user account is an unrecoverable error.  Die and alert.
+				echo 'Failed to save new user (' . $uniqname  . ')!', 'error' . PHP_EOL;
+				die();
+			}
+		}
+		$GLOBALS[$cache_key][$uniqname] = $account->uid;
+		$uid = $account->uid;
+	}
+	// drupal_set_message( sprintf( '<pre>Uniqname: "%s"</pre>', print_r( $uniqname, TRUE ) ) );
+	// drupal_set_message( sprintf( '<pre>**Account** %s</pre>', print_r( $account, TRUE ) ) );
+	return $uid;
+}
+
+/**
+ * Get the Drupal Grant nid based on a SiteMaker Grant name
+ *
+ * @param string  $sitemaker_grant_name The SiteMaker grant name
+ * @return int Drupal Grant node nid for the SiteMaker grant name
+ */
+function _crlt_grant_application_migration_get_grant( $sitemaker_grant_name ) {
+	$nid = 0;
+	$cache_key = '_crlt_grant_application_migration_get_grant';
+	// Create global cache, if needed
+	if ( !isset( $GLOBALS[$cache_key] ) ) {
+		$GLOBALS[$cache_key] = array();
+	}
+	if ( isset( $GLOBALS[$cache_key][$sitemaker_grant_name] ) ) {
+		// Globals cache grant nid known, use it
+		$nid = $GLOBALS[$cache_key][$sitemaker_grant_name];
+	} else {
+		// No cached record, find nid for SiteMaker Grant
+		// Map SiteMaker Grant name to Drupal Grant name
+		$grant_name_map = array(
+			'Faculty Development Fund (FDF)' => 'Faculty Development Fund (FDF)',
+			'Gilbert Whitaker Fund: Stage 1' => 'Gilbert Whitaker Fund',
+			'Gilbert Whitaker Fund: Stage 2' => 'Gilbert Whitaker Fund: Stage 2',
+			'Instructional Development Fund (IDF)' => 'Instructional Development Fund (IDF)',
+			'Internationalizing the Curriculum (ITC)' => 'Internationalizing the Curriculum (ITC)',
+			'Investigating Student Learning Grant (ISL)' => 'Investigating Student Learning Grant (ISL)',
+			'Lecturers\' Professional Development Fund (LPDF)' => 'Lecturers\' Professional Development Fund (LPDF)',
+			'Teaching with Technology Institute (TTI)' => 'Teaching with Technology Institute (TTI)',
+		);
+		$drupal_grant_name = $grant_name_map[$sitemaker_grant_name];
+		$grant_needle = array(
+			'type' => 'grant',
+			'title' => $drupal_grant_name,
+		);
+		$grant_node = node_load( $grant_needle );
+		// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $sitemaker_grant_name, TRUE ) ) );
+		// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $grant_needle, TRUE ) ) );
+		// drupal_set_message( sprintf( '<pre>%s</pre>', print_r( $grant_node, TRUE ) ) );
+		$GLOBALS[$cache_key][$sitemaker_grant_name] = $grant_node->nid;
+		$nid = $grant_node->nid;
+	}
+	return $nid;
+}
+/**
+ * Get the Drupal Workflow State ID for a SiteMaker record.
+ *
+ * @param string  $funded          SiteMaker funded CSV field value
+ * @param string  $reportdue       SiteMaker reportdue CSV field value
+ * @param string  $finalsubmission SiteMaker finalsubmission CSV field value
+ * @return int Drupal Workflow State ID
+ */
+function _crlt_grant_application_migration_get_state( $funded, $reportdue, $finalsubmission ) {
+	$workflow_state = 'New Request (waiting for review)';
+	$workflow_state_id = 0;
+	$cache_key = '_crlt_grant_application_migration_get_state';
+	// Create global cache, if needed
+	if ( !isset( $GLOBALS[$cache_key] ) ) {
+		// Get all state information for the Grant Application workflow
+		$workflows = workflow_get_all();
+		$workflow = 'CRLT Grant Application Workflow';
+		$workflow_id = array_search( $workflow, $workflows );
+		$GLOBALS[$cache_key] = workflow_get_states( $workflow_id );
+	}
+	// Determine workflow state based on funded, report due date, and report received fields
+	if ( 'true'===$funded ) {
+		$sm_report_due = strtotime( $reportdue );
+		if ( $sm_report_due <= strtotime( '+30 days' ) ) {
+			$workflow_state = 'Report Overdue';
+
+		} elseif ( $sm_report_due <= strtotime( 'now' ) ) {
+			$workflow_state = 'Report Due';
+		} else {
+
+			$workflow_state = 'Funded';
+		}
+	} else {
+		$workflow_state = 'Not Funded';
+	}
+	if ( 'true'===$finalsubmission ) {
+		$workflow_state = 'Report Complete';
+	}
+	$workflow_state_id = array_search( $workflow_state, $GLOBALS[$cache_key] );
+	return $workflow_state_id;
+}

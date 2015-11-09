@@ -1,0 +1,5 @@
+name = CRLT Certificate Sync
+description = The CRLT Certificate Sync module.
+package = Other
+core = 6.x
+

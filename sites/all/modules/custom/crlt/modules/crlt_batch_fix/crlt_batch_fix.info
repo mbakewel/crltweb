@@ -1,0 +1,5 @@
+name = CRLT Batch Fix
+description = A CRLT utility module to run various batch processes.
+core = 6.x
+package = Other
+

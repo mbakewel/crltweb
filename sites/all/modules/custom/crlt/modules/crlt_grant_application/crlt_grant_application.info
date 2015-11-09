@@ -1,0 +1,12 @@
+name = CRLT Grant Application
+description = Custom features for the CRLT Grant Application content type
+core = 6.x
+package = CRLT Grants
+dependencies[] = ctools
+dependencies[] = crlt_grant
+dependencies[] = date
+dependencies[] = filefield
+dependencies[] = views
+dependencies[] = views_data_export
+dependencies[] = views_php
+dependencies[] = workflow

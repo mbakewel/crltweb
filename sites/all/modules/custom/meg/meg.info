@@ -1,0 +1,4 @@
+; $Id$
+name = Meg
+description = changes the text on the save button on grant application node add from Save to Submit
+core = 6.x

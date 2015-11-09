@@ -1,0 +1,12 @@
+name = Search by Page
+description = Sets up searching by page on your Drupal site. Must have at least one sub-module active for this module to actually do anything.
+core = 6.x
+dependencies[] = search
+package = "Search"
+
+; Information added by drupal.org packaging script on 2011-09-22
+version = "6.x-1.15"
+core = "6.x"
+project = "search_by_page"
+datestamp = "1316729209"
+

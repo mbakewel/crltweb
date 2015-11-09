@@ -1,0 +1,4 @@
+; $Id$
+name = Webform to Node
+description = Takes data submitted in a webform and creates a node with that content
+core = 6.x

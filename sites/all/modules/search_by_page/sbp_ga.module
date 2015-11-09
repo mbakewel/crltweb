@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * @file
+ * Module file for Search by Page Google Analtics Integration.
+ *
+ * Integrates Search by Page with Google Analytics.
+ * @ingroup search_by_page
+ */
+
+/**
+ * Figures out the search keys from the GET/REQUEST globals.
+ */
+function sbp_ga_get_custom_keys() {
+  static $return;
+  if (!isset($return)) {
+    // Extract keys as remainder of path
+    // Note: support old GET format of searches for existing links.
+    $path = explode('/', $_GET['q'], 3);
+    $keys = empty($_REQUEST['keys']) ? '' : $_REQUEST['keys'];
+    $return = count($path) == 2 ? $path[1] : $keys;
+  }
+  return $return;
+}
+
+/**
+ * Implementation of hook_preprocess_page().
+ *
+ * If we are on a search page, translate the URL for Google Analytics. We
+ * have to override the current call to the _gaq_push() function that the GA
+ * module already put into the footer, with a new call having a different URL.
+ */
+function sbp_ga_preprocess_page(&$variables) {
+  $url_custom = '';
+  if (variable_get('googleanalytics_site_search', FALSE) && $keys = sbp_ga_get_custom_keys()) {
+    $envs = search_by_page_list_environments();
+    foreach ($envs as $envid) {
+      $path = search_by_page_setting_get('page_path', $envid, 'search_pages');
+      if (arg(0) == $path){
+        $url_custom = drupal_to_js(url('search/'. arg(0), array('query' => 'search='. $keys)));
+      }
+      break;
+    }
+  }
+
+  if ($url_custom) {
+    $newscript = '_gaq.push(["_trackPageview", ' . $url_custom . ']);';
+    $oldscript = '_gaq.push(["_trackPageview"]);';
+    $variables['closure'] = str_replace($oldscript, $newscript, $variables['closure']);
+  }
+}

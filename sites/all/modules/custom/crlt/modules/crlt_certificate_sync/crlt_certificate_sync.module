@@ -1,0 +1,470 @@
+<?php
+
+/**
+ * NOTE: The event signup certificate sync code is located in the crlt_event
+ * module. This sub module was created because the crlt_certificate module is
+ * already huge. Consider moving the event singup certificate sync code in here. 
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_certificate_sync_menu() {
+  $items = array();
+  $items['crlt_certificate_sync/update-last-participation-times'] = array(
+    'title' => 'CRLT Certificate Update Last Participation Time',
+    'page callback' => 'crlt_certificate_sync_update_last_participation_time_batch',
+    'access arguments' => array('administer users')
+  );
+  $items['crlt_certificate_sync/expire-old-certificates'] = array(
+    'title' => 'CRLT Expire Old Certificates',
+    'page callback' => 'crlt_certificate_sync_expire_old_certificates_batch',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function crlt_certificate_sync_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+
+  // Only process consultation nodes that are published and being inserted,
+  // updated or deleted.
+  if ($node->type != 'consultation' && $node->status == 1) { return; }
+  if (!in_array($op, array('insert', 'update', 'delete'))) { return; }
+  
+  global $user;
+  
+  // Prepare a messages array for admins.
+  $messages = array();
+  
+  //$messages[] = array('<pre>' . print_r($node, true) . '</pre>');
+  
+  // Determine the type of consultation.
+  $consultation_type = $node->field_consult_type[0]['value'];
+  
+  // Depending on the type of consultation, determine the type of certificate
+  // (if any) this is eligable for.
+  $type = null;
+  switch ($consultation_type) {
+    case 'Midterm Student Feedback':
+    case 'Teaching Consultation - Student Evaluations':
+    case 'Teaching Consultation - Classroom Observation':
+    case 'Teaching Consultation - Video Taping':
+      $type = 'C2';
+      break;
+    case 'Teaching Consultation - Teaching Philosophy':
+      $type = 'E';
+      break;
+  }
+  if (!$type) {
+    crlt_show_messages($messages);
+    return;
+  }
+  
+  // Determine the verifier for this consultation. The verifier will be used as
+  // the workflow user for the certificate node(s). If the verifier is a
+  // 'gtc-YYYY' user, then load up the user marked on the GTC field.
+  $verifier = null;
+  if ($node->field_consultation_serv_provider[0]['uid']) {
+    $verifier = user_load($node->field_consultation_serv_provider[0]['uid']);
+    if ($verifier) {
+      if (strpos($verifier->name, 'gtc-') !== FALSE || strpos($verifier->name, 'gtcs-') !== FALSE) {
+        $verifier = user_load($node->field_gtc[0]['value']);
+        if (!$verifier) {
+          $verifier = user_load($node->field_consultation_serv_provider[0]['uid']);
+          $messages[] = array("A GTC was selected as the service provider for consultation ($node->nid), but we failed to load the specified GTC account ({$node->field_gtc[0]['value']}). So we are going to use $verifier->name instead!", 'warning');
+        }
+      }
+    }
+    else {
+      $messages[] = array("Failed to load verifier ({$node->field_consultation_serv_provider[0]['uid']}) for consultation ($node->nid).", 'error');
+      crlt_show_messages($messages);
+      return;
+    }
+  }
+  
+  // Since the consultation can have multiple consultation clients, we need to
+  // iterate over each client (user) and sync their certificate(s).
+  foreach($node->field_client as $delta => $client) {
+    
+    // Load the client user account (author of the certificate).
+    $account = user_load($client['uid']);
+    if (!$account) {
+      $messages[] = array("Failed to load user account ({$client['uid']}) for consultation certificate synchronization!", 'error');
+      crlt_show_messages($messages);
+      return;
+    }
+    
+    // If the client is not a grad student, we don't process any certificates
+    // for them.
+    if (!isset($account->Rank) || $account->Rank != 'Graduate Student') {
+      $messages[] = array("Client ($account->name) is not a grad student, skipping certificate synchronization");
+      continue;
+    }
+    
+    // Are we creating a new certificiate, or updating an existing one?
+    $new = TRUE;
+    $sql = "
+      SELECT n.nid
+      FROM {node} n
+      INNER JOIN {content_type_certificate} ctc ON n.nid = ctc.nid
+      WHERE
+        n.type = 'certificate' AND
+        n.vid = ctc.vid AND
+        ctc.field_certificate_type_value = '%s' AND
+        n.uid = %d AND
+        ctc.field_certificate_source_value = 'consultation' AND
+        ctc.field_certificate_source_id_value = %d
+    ";
+    $certificate_nid = db_result(db_query($sql, $type, $account->uid, $node->nid));
+    if ($certificate_nid) { $new = FALSE; }
+    
+    // When a consultation is deleted, and a certificate exists, deny the
+    // certificate. Switch the active user during the process so the workflow
+    // is set properly, then switch back.
+    if ($op == 'delete' && !$new) {
+      $certificate = node_load($certificate_nid, null, true);
+      $messages[] = array("Denying " . l($certificate->title, "node/$certificate->nid") . " for " . l($account->name, "user/$account->uid") . ".");
+      $certificate->workflow_comment = "Consultation #$node->nid was deleted";
+      $current_user = $user;
+      $user = $verifier;
+      workflow_transition($certificate, 11);
+      $user = $current_user;
+    }
+    // Handle new and existing certificates.
+    else if ($new && $node->field_status[0]['value'] == 'Complete') {
+      
+      // This is a new certificate...
+      
+      $messages[] = array("Creating new certificate $type for " . l($account->name, "user/$account->uid") . ".");
+      // Create a new certificate node.
+      $certificate = new stdClass();
+      $certificate->title = "Certificate - $type";
+      $certificate->body = $consultation_type;
+      $certificate->type = 'certificate';
+      $certificate->uid = $account->uid;
+      $certificate->field_certificate_type = array(array('value' => $type));
+      $certificate->field_certificate_source = array(array('value' => 'consultation'));
+      $certificate->field_certificate_source_id = array(array('value' => $node->nid));
+      $certificate->field_certificate_sponsor_unit = array(array('value' => 'crlt'));
+      $certificate->field_certificate_term = array(array('value' => crlt_certificate_get_term_from_consultation($node)));
+      $certificate->field_certificate_agreement = array(array('value' => 1));
+      $certificate->workflow_stamp = $node->created;
+      if (isset($node->field_date[0]['value'])) {
+        $certificate->workflow_stamp = strtotime($node->field_date[0]['value']);
+      }
+      //$messages[] = array('<pre>' . print_r($certificate, true) . '</pre>');
+      node_save($certificate);
+      if ($certificate->nid) {
+        $messages[] = array(
+          "Created " . l("Certificate $type", "node/$certificate->nid") . " from a " .
+          l("consultation", "node/$node->nid") . " for " . l($account->name, "user/$account->uid") . "."
+        );
+        // Reload the newly created certificate node, then determine its
+        // workflow state. We need to swap the current user with the verifier
+        // so the workflow is marked properly, switch back afterwards.
+        $certificate = node_load($certificate->nid, null, true);
+        $sid = 10; // Approved.
+        $workflow_comment = "Consultation #$node->nid completed";
+        // BEGIN: duplicate code block
+        // On certificate E, if the consultation has its "Is this for
+        // certificate?" field checked, and the "Teaching Philosophy Approved"
+        // field is 'yes', then we can set it to approved, but if the TPA is set
+        // to 'no' then the cert should be denied. 
+        if ($type == 'E') {
+          // We'll initally deny all type E's, unless we prove otherwise.
+          $sid = 11; // Denied.
+          $workflow_comment = "Consultation #$node->nid Teach Philosophy Denied";
+          if (
+            isset($node->field_consultation_tp_approved) &&
+            $node->field_consultation_tp_approved[0]['value'] == 1 &&
+            isset($node->field_consultation_tp_cert) &&
+            $node->field_consultation_tp_cert[0]['value'] == 1
+          ) {
+            $sid = 10; // Approved.
+            $workflow_comment = "Consultation #$node->nid Teach Philosophy Approved";  
+          }
+        }
+        // END: duplicate code block
+        $certificate->workflow_comment = $workflow_comment;
+        // Reset the workflow time stamp, since it seems to get lost via the
+        // node_save() call.
+        $certificate->workflow_stamp = $node->created;
+        if (isset($node->field_date[0]['value'])) {
+          $certificate->workflow_stamp = strtotime($node->field_date[0]['value']);
+        }
+        $current_user = $user;
+        $user = $verifier;
+        workflow_transition($certificate, $sid);
+        $user = $current_user;
+      }
+      else {
+        $messages[] = array(
+           "Failed to create certificate for $account->name on signup ($signup->sid) for event (" .
+            l($event->title, 'node/' . $event->nid) .
+          ").",
+          'error'
+        );
+      }
+      
+    }
+    else {
+      
+      // This is an existing certificate, depending on the consultation status,
+      // move the certificate workflow to its appropriate state.
+      if (!$certificate_nid) { return; }
+      $sid = null;
+      if ($node->field_status[0]['value'] == 'Complete') { $sid = 10; }
+      else { $sid = 11; }
+      $certificate = node_load($certificate_nid, null, true);
+      if ($certificate && $sid != $certificate->_workflow) {
+        $messages[] = array("Updating the workflow on " . l($certificate->title, "node/$certificate->nid") . " for " . l($account->name, "user/$account->uid") . ".");
+        $workflow_comment = "Consultation #$node->nid status changed";
+        // BEGIN: duplicate code block
+        // On certificate E, if the consultation has its "Is this for
+        // certificate?" field checked, and the "Teaching Philosophy Approved"
+        // field is 'yes', then we can set it to approved, but if the TPA is set
+        // to 'no' then the cert should be denied. 
+        if ($type == 'E') {
+          // We'll initally deny all type E's, unless we prove otherwise.
+          $sid = 11; // Denied.
+          $workflow_comment = "Consultation #$node->nid Teach Philosophy Denied";
+          if (
+            isset($node->field_consultation_tp_approved) &&
+            $node->field_consultation_tp_approved[0]['value'] == 1 &&
+            isset($node->field_consultation_tp_cert) &&
+            $node->field_consultation_tp_cert[0]['value'] == 1
+          ) {
+            $sid = 10; // Approved.
+            $workflow_comment = "Consultation #$node->nid Teach Philosophy Approved";  
+          }
+        }
+        // END: duplicate code block
+        $certificate->workflow_comment = $workflow_comment;
+        $current_user = $user;
+        $user = $verifier;
+        workflow_transition($certificate, $sid);
+        $user = $current_user;
+      }
+      
+    }
+    
+  }
+
+  crlt_show_messages($messages);
+  
+}
+
+function crlt_certificate_sync_update_last_participation_time_batch() {
+  $operations = array();
+  // Grab a list of user ids who have completed a badge or are in_progress on a
+  // badge.
+  $sql = "
+    SELECT pv.uid
+    FROM {profile_values} pv
+    WHERE
+      pv.fid IN (10,11,12,13,14,15,16,17,18,19) AND
+      (pv.value = 'completed' OR pv.value = 'in_progress')
+    GROUP BY pv.uid ";
+  // LIMIT 10
+  $results = db_query($sql);
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_certificate_sync_update_last_participation_time_batch_process', array($data->uid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_certificate_sync_update_last_participation_time_batch_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_certificate_sync_update_last_participation_time_batch_process($uid, &$context) {
+  crlt_badges_update_user_account_last_participation_time($uid);
+  //drupal_set_message(l($uid, "user/$uid/edit/Certificates"));
+  $context['message'] = t('Processing @uid', array('@uid' => $uid));
+}
+
+function crlt_certificate_sync_update_last_participation_time_batch_finished($success, $results, $operations) {
+  if ($success) { $message = count($results) . ' processed.'; }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt_certificate_sync/update-last-participation-times'));
+}
+
+function crlt_certificate_sync_expire_old_certificates_batch() {
+  $operations = array();
+
+  // What time is it now, and when are we going to potentially expire certs?
+  $now = time();
+  $expiration = $now - (60*60*24*365*5); // Five years ago.
+  drupal_set_message("Today is " . date('Y-m-d', $now) . ", we're going to potentially expire certificates older than " . date('Y-m-d', $expiration) . '.');
+  
+  // Grab the semester term field values and labels.
+  $terms = crlt_field_allowed_values_list_as_array('field_certificate_term');
+
+  // Grab all certificate node ids, except for certificate type A, those do not
+  // expire.
+  $sql = "
+    SELECT n.nid
+    FROM {node} n
+    INNER JOIN {content_type_certificate} ctc ON n.nid = ctc.nid
+    INNER JOIN {workflow_node} wn ON n.nid = wn.nid
+    INNER JOIN {workflow_states} ws ON wn.sid = ws.sid
+    WHERE
+      n.vid = ctc.vid AND
+      ctc.field_certificate_type_value <> 'A' AND
+      n.type = 'certificate' AND
+      ws.sid NOT IN (12, 13) ";
+  $results = db_query($sql, $expiration);
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array(
+      'crlt_certificate_sync_expire_old_certificates_batch_process',
+      array(
+        $data->nid,
+        $now,
+        $expiration,
+        $terms
+      )
+    );
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_certificate_sync_expire_old_certificates_batch_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_certificate_sync_expire_old_certificates_batch_process($nid, $now, $expiration, $terms, &$context) {
+  
+  // Load the certificate and its owner's account, and grab the cert type.
+  $certificate = node_load($nid);
+  $account = user_load($certificate->uid);
+  $type = $certificate->field_certificate_type[0]['value'];
+  
+  // Begin processing. We'll warn the active user whenever a certificate is
+  // about to be expired, otherwise we'll give them a status message. We'll
+  // assume we are expiring each certificate, unless we prove otherwise.
+  $title = $certificate->title;
+  if (!isset($title) || empty($title)) { $title = "Certificate $type"; }
+  $msg = "Processing " . l($title, "node/$nid") . " for " . 
+    l($account->name, "user/$account->uid") . ", it was created on " .
+    date('Y-m-d', $certificate->created) . "... ";
+  $msg_type = 'status';
+  $expiring = TRUE;
+  
+  // We need the certificate's term (end of term) date (except on type E, just
+  // use the node created date), as the cutoff date for expiration, unless the
+  // certificate doesn’t have a term, then throw an error explaining that the
+  // cert needs updating.
+  $certificate_time = $certificate->created;
+  $bad_certificate_time = FALSE;
+  if ($type != 'E') {
+    if (!empty($certificate->field_certificate_term[0]['value'])) {
+      $certificate_time = crlt_certificate_get_term_end_date($terms[$certificate->field_certificate_term[0]['value']]);
+      if (!$certificate_time) { $bad_certificate_time = TRUE; }
+      else {
+        $msg .= "and it occured during the " .
+          $terms[$certificate->field_certificate_term[0]['value']] .
+          ' semester for which we cut off on ' . date('Y-m-d', $certificate_time) . ' ... ';
+      }
+    }
+    else { $bad_certificate_time = TRUE; }
+  }
+  if ($bad_certificate_time) {
+    $msg_type = 'error';
+    $msg .= " however it doesn't have an academic term set on it. " . l("Set it now so it can be properly processed later.", "node/$nid/edit");
+    drupal_set_message($msg, $msg_type);
+    $context['message'] = "Error on certificate $type for $account->name...";
+    return;
+  }
+  
+  // Has the certificate time expired?
+  $expired = TRUE;
+  if ($certificate_time > $expiration) {
+    $expired = FALSE;
+    $expiring = FALSE;
+    $msg .= "since " . date('Y-m-d', $certificate_time) .
+      " is after the expiration date of " . date('Y-m-d', $expiration) .
+      ", we will NOT expire it.";
+  }
+  else {
+    $msg .= "since " . date('Y-m-d', $certificate_time) .
+      " is before the expiration date of " . date('Y-m-d', $expiration) .
+      ", we may expire it... ";
+  }
+
+  // The certificate has expired, however there are some special cases where we
+  // won't expire the certificate...
+  if ($expired) {
+    
+    // Set up potential database values for the Paper Certificate to NOT be
+    // considered.
+    $do_not_consider = array('', NULL, 'No', 'no');
+    
+    // Certificates B, C, D and E do not expire for any user with GTC certificate.
+    // paper issued.
+    if (in_array($type, array('B1', 'B1_mc', 'B1_it', 'B2', 'C1', 'C2', 'D', 'E'))) {
+      if (
+        isset($account->profile_gtc_certificate_issued) &&
+        !in_array($account->profile_gtc_certificate_issued, $do_not_consider)
+      ) {
+        $expiring = FALSE;
+        $msg .= "however $account->name has the GTC Paper certificate issued, so we're NOT going to expire this certificate.";
+      }
+      else {
+        $msg .= "and since $account->name does NOT have the GTC Paper certificate issued, we're going to expire this certificate... ";
+        $msg_type = 'warning';
+      }
+    }
+  
+    // Certificates F, G, H, I J do not expire for any user with GTC+ certificate.
+    // paper issued.
+    if (in_array($type, array('F', 'F0', 'G', 'G_it', 'H', 'I', 'J'))) {
+      if (
+        isset($account->profile_gtc_plus_certificate_issued) &&
+        !in_array($account->profile_gtc_plus_certificate_issued, $do_not_consider)
+      ) {
+        $expiring = FALSE;
+        $msg .= "however $account->name has the GTC+ Paper certificate issued, so we're NOT going to expire this certificate.";
+      }
+      else {
+        $msg .= "and since $account->name does NOT have the GTC+ Paper certificate issued, we're going to expire this certificate... ";
+        $msg_type = 'warning';
+      }
+    }
+    
+  }
+  
+  // Are we expiring it?
+  if ($expiring) {
+    crlt_badges_nodeapi($certificate, 'update', FALSE);
+    $certificate->workflow_comment = strip_tags($msg);
+    workflow_transition($certificate, 13);
+    $msg .= "done expiring it!";
+    // @WARNING - we can only output messages on expiring certificates or the
+    // server will run out of memory.
+    drupal_set_message($msg, $msg_type);
+  }
+  $context['message'] = "Processing certificate $type for $account->name...";
+}
+
+function crlt_certificate_sync_expire_old_certificates_batch_finished($success, $results, $operations) {
+  if ($success) { $message = count($results) . ' processed.'; }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt_certificate_sync/expire-old-certificates'));
+}

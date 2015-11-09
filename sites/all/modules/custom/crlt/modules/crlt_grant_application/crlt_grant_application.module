@@ -1,0 +1,412 @@
+<?php
+
+/**
+ * Loads and returns the workflow object.
+ */
+function crlt_grant_application_workflow_load() {
+  return workflow_load( 3 );
+}
+/**
+ * Implements hook_menu().
+ */
+function crlt_grant_application_menu() {
+  $items = array();
+  $items['admin/crlt/grant-applications/assign-reviewers/%'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'CRLT Grant Application Assign Reviewers',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array( 'crlt_grant_application_assign_reviewers_form', 4 ),
+    'access arguments' => array( 'administer users' ),
+    'file' => 'crlt_grant_applications.forms.inc'
+  );
+  $items['node/%/grant-report'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'CRLT Grant Report Entry',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array( 'crlt_grant_application_report_form', 1 ),
+    'access callback' => 'crlt_grant_application_report_form_access',
+    'access arguments' => array( 1 ),
+    'file' => 'crlt_grant_application.review_form.inc'
+  );
+  $items['admin/crlt/grant-applications/report-mail-settings'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'CRLT Grant Report Mail Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array( 'crlt_grant_report_mail_settings' ),
+    'access arguments' => array( 'administer content types' ),
+    'file' => 'crlt_grant_report_mail_settings.form.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+/* function crlt_grant_application_form_alter( &$form, &$form_state, $form_id ) {
+  drupal_set_message($form_id);
+  drupal_set_message(sprintf('<pre>%s</pre>',htmlspecialchars(print_r($form,TRUE))));
+} */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function crlt_grant_application_form_grant_application_node_form_alter( &$form, &$form_state ) {
+
+  //drupal_set_message('<pre>' . print_r($form, true) . '</pre>');
+
+  /*$field_grant = $_GET['field_grant'] ? $_GET['field_grant'] : null;
+  if ($field_grant) {
+    $form['field_grant']['#default_value'][0]['nid'] = $field_grant;
+  }*/
+
+  // Attach an after build handler.
+  $form['#after_build'][] = 'crlt_grant_application_node_form_after_build';
+
+
+}
+
+/**
+ *
+ */
+function crlt_grant_application_node_form_after_build( $form, &$form_state ) {
+
+  //drupal_set_message('<pre>' . print_r($form['field_grant'], true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($form_state['values'], true) . '</pre>');
+
+  $field_grant = $_GET['field_grant'] ? $_GET['field_grant'] : null;
+  //drupal_set_message($field_grant);
+  if ( $field_grant ) {
+    //drupal_set_message('<pre>' . print_r($form['field_grant'], true) . '</pre>');
+
+    // Set the default value for the grant node reference.
+    // @TODO not working.
+    $form['field_grant']['#default_value'][0]['nid'] = intval( $field_grant );
+    $form_state['values']['field_grant']['nid']['nid'] = intval( $field_grant );
+    //$form['field_grant']['#default_value'][0] = array('nid' => $_GET['field_grant']);
+    //$form['field_grant']['#value'][0] = array('nid' => $_GET['field_grant']);
+    //$form['field_grant']['nid']['#value'] = $_GET['field_grant'];
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_nodeapi( &$node, $op, $a3 = NULL, $a4 = NULL )
+ *
+ * Grant Application node insert hook:
+ * - Send email to submitter & first applicant
+ */
+function crlt_grant_application_nodeapi( &$node, $op, $a3 = NULL, $a4 = NULL ) {
+// if($node->nid == 83685) {
+// drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+// 
+// }
+  // Skip all other content types.
+  if (FALSE && 'grant_application' == $node->type && 'insert' == $op ) {
+    // Skip SiteMaker content migration nodes
+    $sitemaker_id = trim( trim( $node->field_sitemaker_id[0]['value'] ), '/' );
+    if ( !strlen( $sitemaker_id ) ) {
+      // Mail content
+      $mail_params = array(
+        'from'=>'crltgrants@umich.edu',
+        'to'=>array(),
+        'subject'=>'',
+        'body'=>'',
+      );
+      // Get submitter
+      $submitter = user_load( array( 'uid'=>$node->uid ) );
+      $mail_params['to'][] = $submitter->mail;
+      // Try to get first applicant
+      if ( isset( $node->field_grant_application_users[0]['uid'] ) ) {
+        $applicant = user_load( array( 'uid'=>$node->field_grant_application_users[0]['uid'] ) );
+        $mail_params['to'][] = $applicant->mail;
+      } else {
+        // Default to node submitter as applicant, if needed
+        $applicant = $submitter;
+      }
+      // Try to get grant
+      if ( isset( $node->field_grant[0]['nid'] ) ) {
+        $grant = node_load( array( 'nid'=>$node->field_grant[0]['nid'] ) );
+        $grant_title = $grant->title;
+      } else {
+        $grant_title = 'grant';
+      }
+      // Try to get grant year
+      if ( isset( $node->field_grant_application_year[0]['value'] ) ) {
+        $grant_year = $node->field_grant_application_year[0]['value'];
+      } else {
+        $grant_year = '';
+      }
+      // Build email subject
+      $mail_params['subject']=sprintf(
+        'Confirmation: CRLT grant proposal submission for %s %s',
+        $grant_year,
+        $grant_title
+      );
+      // Build email body
+      $mail_params['body']=sprintf(
+        '<p>Thank you for submitting your proposal to CRLT&apos;s %s %s competition.</p> <p style="margin-top:1em;margin-bottom:0;"><strong>Project Title:</strong></p> <p style="margin-top:0;">%s</p> <p style="margin-top:1em;margin-bottom:0;"><strong>Grant Application ID:</strong></p> <p style="margin-top:0;">%s</p> <p style="margin-top: 1em;margin-bottom:0;"><strong>Submitted by:</strong></p> <p style="margin-top:0;">%s %s (%s)</p> <p style="margin-top: 1em;margin-bottom:0;">For information about how and when funding decisions are made, please see:</p> <p style="margin-top:0;"><a href="http://www.crlt.umich.edu/grants">http://www.crlt.umich.edu/grants</a></p> <p style="margin-top: 1em;">If you have any questions, please e-mail <a href="mailto:crltgrants@umich.edu">crltgrants@umich.edu</a></p><p style="margin-top: 1em;margin-bottom:0;">Best regards,</p><p style="margin-top:0;">Center for Research on Learning and Teaching</p>',
+        $grant_year,
+        $grant_title,
+        $node->title,
+        $node->nid,
+        $applicant->profile_first_name,
+        $applicant->profile_last_name,
+        $applicant->name
+      );
+      // Send email to submitter & first applicant
+      // if ( drupal_mail( 'crlt_grant_application', 'crlt_grant_application_submitted', implode( ',', $mail_params['to'] ), language_default(), $mail_params, $mail_params['from'], TRUE ) ) {
+        // drupal_set_message( $op . 'A Grant Application Submission email has been sent to ' . implode( ' &amp; ', $mail_params['to'] ) );
+      // } else {
+        // drupal_set_message( 'There was an error sending your Grant Application Submission email' );
+      // }
+    }
+  }
+}
+/**
+ * Implements hook_mail($key, &$message, $params)
+ * - Send submission successful email to submitter & first applicant
+ * - Send report reminder emails to first applicant
+ */
+function crlt_grant_application_mail( $key, &$message, $params ) {
+  if ( 'crlt_grant_application_submitted' == $key ||
+    'crlt_grant_application_report_reminder' == $key ) {
+    $headers = array(
+      'MIME-Version' => '1.0',
+      'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+      'Content-Transfer-Encoding' => '8Bit',
+      'X-Mailer' => 'Drupal'
+    );
+    foreach ( $headers as $key => $value ) {
+      $message['headers'][$key] = $value;
+    }
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+  }
+}
+/**
+ * Implementation of hook_cron().
+ * https://api.drupal.org/api/drupal/developer!hooks!core.php/function/hook_cron/6
+ */
+function crlt_grant_application_cron() {
+  // Check the current update timer
+  $conf_delta = variable_get( 'crlt_grant_report_mail_timer', 604800 );
+
+  // Check when the last update occurred
+  $last_time = variable_get( 'crlt_grant_report_mail_sent', 0 );
+
+  // Capture current run time
+  $run_time = time();
+
+  // Send report reminder emails if the amount of time specified by the update
+  // timer has passed
+  $actual_delta = $run_time - $last_time;
+  if ( $actual_delta >= $conf_delta ) {
+    // Watchdog log
+    watchdog(
+      'crlt_grant_app',
+      'Cron Executed: At @run_time. Previous execution @last_time. @actual_delta seconds between executions. @conf_delta seconds configured between executions.',
+      array(
+        '@run_time'=>format_date($run_time),
+        '@last_time'=>format_date($last_time),
+        '@actual_delta'=>$actual_delta,
+        '@conf_delta'=>$conf_delta,        
+      ), 
+      WATCHDOG_INFO
+    );
+
+    // Send report reminders
+    _crlt_grant_application_report_reminders();
+
+    // Record when the action was completed
+    variable_set( 'crlt_grant_report_mail_sent', $run_time );
+  } else {
+    // Cron skipped, log
+    watchdog(
+      'crlt_grant_app',
+      'Cron Skipped: At @run_time. Previous execution @last_time. @actual_delta seconds between executions. @conf_delta seconds configured between executions.',
+      array(
+        '@run_time'=>format_date($run_time),
+        '@last_time'=>format_date($last_time),
+        '@actual_delta'=>$actual_delta,
+        '@conf_delta'=>$conf_delta,        
+      ), 
+      WATCHDOG_DEBUG
+    );
+  }
+}
+/**
+ * Cron/manual executable task to send grant report reminders
+ */
+function _crlt_grant_application_report_reminders( $cron=TRUE ) {
+  // Set Report Due workflow status
+  _crlt_grant_application_report_due( $cron );
+  // Send report reminder 3 emails
+  _crlt_grant_application_report_reminders_send( array( 'block_4', 'block_5' ), 3, $cron );
+  // Send report reminder 2 emails
+  _crlt_grant_application_report_reminders_send( array( 'block_2', 'block_3' ), 2, $cron );
+  // Send report reminder 1 emails
+  _crlt_grant_application_report_reminders_send( array( 'default', 'block_1' ), 1, $cron );
+  // Display a message to the user if the process was triggered manually
+  if ( $cron === FALSE ) {
+    drupal_set_message( t( 'Grant report workflow and reminder emails processed' ) );
+  }
+}
+/**
+ * Build and dispatch email for specific report reminder
+ */
+function _crlt_grant_application_report_reminders_send( $view_dispays, $report_reminder, $cron=TRUE ) {
+  // Aggregate views displays as needed, because Drupal Views doesn't support "or" filter logic
+  $view_results = array();
+  foreach ( $view_dispays as $view_dispay ) {
+    $view_results = array_merge( $view_results, views_get_view_result( 'grant_report_reminder_01', $view_dispay ) );
+  }
+  foreach ( $view_results as $view_item ) {
+    $grant_application = node_load( array( 'nid'=>$view_item->nid ) );
+    // Default the number of reminders sent, if needed
+    if ( !isset( $grant_application->field_grant_app_reminders_sent[0]['value'] ) ) {
+      $grant_application->field_grant_app_reminders_sent[0]['value'] = 0;
+    }
+    // Try to get grant
+    if ( isset( $grant_application->field_grant[0]['nid'] ) ) {
+      $grant_nid = $grant_application->field_grant[0]['nid'];
+    } else {
+      $grant_nid = '0';
+    }
+    // Build key for report reminder email subject & body
+    $key = 'crlt_grant_report_reminder_'.$grant_nid.'_0'.$report_reminder;
+    // Try to get first applicant
+    if ( isset( $grant_application->field_grant_application_users[0]['uid'] ) ) {
+      $applicant = user_load( array( 'uid'=>$grant_application->field_grant_application_users[0]['uid'] ) );
+    } else {
+      // Default to node submitter as applicant, if needed
+      $applicant = user_load( array( 'uid'=>$grant_application->uid ) );
+    }
+    $mail_params = array(
+      'from'=>'crltgrants@umich.edu',
+      'to'=>array( $applicant->mail ),
+      'subject'=>variable_get( $key . "_subject", 'No report reminder subject found' ),
+      'body'=>variable_get( $key, 'No report reminder email found' ),
+    );
+    // Replace the node & user tokens and convert newlines
+    $mail_params['body'] = token_replace( $mail_params['body'], 'node', $grant_application );
+    $mail_params['body'] = token_replace( $mail_params['body'], 'user', $applicant );
+    $mail_params['body'] = nl2br( $mail_params['body'] );
+    // Try to send the email
+    if ( drupal_mail( 'crlt_grant_application', 'crlt_grant_application_report_reminder', implode( ',', $mail_params['to'] ), language_default(), $mail_params, $mail_params['from'], TRUE ) ) {
+      // Log successful email send
+      watchdog( 'crlt_grant_app', 'Email: Grant Report reminder @report_reminder sent to @to for nid @nid', array( '@report_reminder'=>$report_reminder, '@to'=>implode( ' &amp; ', $mail_params['to'] ), '@nid'=>$grant_application->nid ) );
+      if ( FALSE===$cron ) {
+        drupal_set_message( t( 'Grant Report reminder @report_reminder email has been sent to @to for nid @nid', array( '@report_reminder'=>$report_reminder, '@to'=>implode( ' &amp; ', $mail_params['to'] ), '@nid'=>$grant_application->nid ) ) );
+      }
+      // Increment and save the number of reminders sent
+      $grant_application->field_grant_app_reminders_sent[0]['value'] = $report_reminder;
+      node_save( $grant_application );
+    } else {
+      watchdog( 'crlt_grant_app', 'Email: Error sending Grant Report reminder @report_reminder to nid %nid', array( '@report_reminder'=>$report_reminder, '%nid' => $grant_application->nid ), WATCHDOG_ERROR );
+      if ( FALSE===$cron ) {
+        drupal_set_message( t( 'There was an error sending Grant Report reminder @report_reminder email to nid %nid', array( '@report_reminder'=>$report_reminder, '%nid' => $grant_application->nid ) ) );
+      }
+    }
+    // drupal_set_message( sprintf( '<pre>%s</pre>', htmlentities( print_r( $mail_params, TRUE ) ) ) );
+  }
+}
+/**
+ * Set Grant Application workflow state to Report Due
+ */
+function _crlt_grant_application_report_due( $cron=TRUE ) {
+  // Aggregate views displays
+  // Each view display also implies a new workflow state id
+  $view_dispays = array( 
+    'default' => 23, // Display contains Report Due items
+    'block_1' => 24, // Display contains Report Overdue items
+  );
+  $view_results = array();
+  foreach ( $view_dispays as $view_dispay => $new_state_id ) {
+    // Store the view display results
+    $tmp_view_results = views_get_view_result( 'grant_report_due', $view_dispay );
+    // Append the new state id to each result object
+    foreach ($tmp_view_results as &$tmp_view_result) {
+      $tmp_view_result->new_state_id = $new_state_id;
+    }
+    unset($tmp_view_result); // foreach reference cleanup
+    // Accumulate the results from all view displays
+    $view_results = array_merge( $view_results, $tmp_view_results );
+  }
+  foreach ( $view_results as $view_item ) {
+    // Load the grant application
+    $grant_application = node_load( array( 'nid'=>$view_item->nid ) );
+    // Transition the Workflow State to Report Due
+    workflow_transition( $grant_application, $view_item->new_state_id );
+    $state = workflow_get_state( $view_item->new_state_id );
+    // Log process
+    watchdog( 'crlt_grant_app', 'Workflow: Grant Application state set to <b>@state</b> for nid <b>@nid</b>', array(
+        '@state'=>$state['state'],
+        '@nid'=>$grant_application->nid
+      )
+    );
+    if ( FALSE===$cron ) {
+      drupal_set_message( t(
+        'Grant Application workflow state set to @state for nid @nid',
+        array(
+          '@state'=>$state['state'],
+          '@nid'=>$grant_application->nid
+        )
+      ) );
+    }
+    // drupal_set_message( sprintf( '<pre>%s</pre>', htmlentities( print_r( $mail_params, TRUE ) ) ) );
+  }
+}
+/**
+ * Authorize access to the grant application report form page
+ * - CRLT admins always have access
+ * - Grant application submitters and first applicants have access
+ *   depending on workflow state.
+ *
+ * @return boolean TRUE if authorized, FALSE otherwise
+ */
+function crlt_grant_application_report_form_access( $nid ) {
+  global $user;
+  $authorized = FALSE;
+  // Load the node
+  $grant_application = node_load( array( 'nid'=>$nid ) );
+  // Only authorize for Grant Application nodes
+  if ( 'grant_application' == $grant_application->type ) {
+    if ( crlt_grant_admin() ) {
+      // CRLT admins authorized ALWAYS
+      $authorized = TRUE;
+    } else {
+      // Grant Application submitter and first applicant authorized SOMETIMES
+      // Get Grant Application submitter
+      $maybe_auth_uids = array( $grant_application->uid );
+      // Try to get first applicant
+      if ( isset( $grant_application->field_grant_application_users[0]['uid'] ) ) {
+        $maybe_auth_uids[] = $grant_application->field_grant_application_users[0]['uid'];
+      }
+      // Check if current user is submitter or first applicant
+      if ( in_array( $user->uid, $maybe_auth_uids ) ) {
+        // Get the current workflow state, in text
+        $state_id = workflow_node_current_state( $grant_application );
+        $state = workflow_get_state( $state_id );
+        // Submitter & first applicant may access in these states
+        $authorized_states = array(
+          'Funded',
+          'Report Due',
+          'Report Overdue',
+          // 'Report Complete'
+        );
+        if ( in_array( $state['state'], $authorized_states ) ) {
+          // Submitter or first applicant, in valid state. Authorize.
+          $authorized = TRUE;
+        } else {
+          drupal_set_message( 'Unauthorized access. Grant report form cannot be accessed when the grant is in state: ' . $state['state'], 'error' );
+        }
+      } else {
+        drupal_set_message( 'Unauthorized user access. Only CRLT Admins, Grant Application submitters, and first applicants may access this page.', 'error' );
+      }
+    }
+  } else {
+    drupal_set_message( 'Invalid grant application node: ' . $nid, 'error' );
+  }
+  return $authorized;
+}

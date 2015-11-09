@@ -1,0 +1,135 @@
+/**
+ * Consultations
+ */
+#crlt_consultation_client_name-wrapper,
+#crlt_consultation_client_mail-wrapper,
+#crlt_consultation_client_first_name-wrapper,
+#crlt_consultation_client_last_name-wrapper { 
+  float: left;
+  margin-right: 1em;
+}
+#crlt_consultation_client_institution-wrapper {
+  clear: both;
+}
+#crlt_consultation_client_name,
+#crlt_consultation_client_mail,
+#crlt_consultation_client_first_name,
+#crlt_consultation_client_last_name { 
+  width: 128px;
+}
+#crlt_consultation_client_institution {
+  width: 256px;
+}
+
+#crlt_consultation_client_list li a {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+#edit-field-consultation-components-value-Annual-Report-wrapper,
+#edit-field-consultation-components-value-Assessment-wrapper,
+#edit-field-consultation-components-value-Grants-wrapper,
+#edit-field-consultation-components-value-IT-wrapper,
+#edit-field-consultation-components-value-Multicultural-wrapper {
+  float: left;
+  margin-right: 1em;
+}
+#edit-field-num-contacts-0-value-wrapper {
+  clear: both;
+}
+fieldset.group-gtc-details {
+  clear: both;
+}
+#field-consultation-serv-provider-items .text,
+#field-client-items .text {
+  width: 100%;
+}
+
+/**
+ * Events
+ */
+img.crlt_event_flag {
+  margin-top: 4px;
+  margin-right: 4px;
+}
+div.view-crlt-events-calendar td.views-field-title {
+  padding-left: 4px;
+}
+.view-crlt-events-calendar .views-field-title a {
+  color: black;
+  text-decoration: underline;
+}
+.view-crlt-events-calendar tr.crlt_odd_week,
+.view-crlt-events-calendar tr.crlt_odd_week td {
+  background-color: #eee;
+}
+.view-crlt-events-calendar tr.crlt_even_week, 
+.view-crlt-events-calendar tr.crlt_even_week td {
+  background-color: #ddd;
+}
+
+/**
+ * Certificates
+ */
+#content-messages-inner .messages li {
+  font-size: 115%;
+}
+
+/**
+ * Badges
+ */
+.view-gtcplus-profile-gallery .views-field-body .crlt_badge_image_wrapper img {
+  margin: 0px 4px 4px 0px;
+}
+#view-id-crlt_user_certificates-page_1 .view-content {
+  margin-bottom: 2em;
+}
+
+/**
+ * CRLT Players
+ */
+#block-nice_menus-2 {
+  padding-bottom: 0px;
+  overflow: visible;
+}
+#block-nice_menus-2 {
+  margin-left: 0px;
+}
+#navigation ul#nice-menu-2 {
+  margin-left: 4px;
+}
+#navigation ul#nice-menu-2 li {
+  background-color: transparent;
+  border: none;
+  background: url("../../../themes/city_magazine_custom/images/crltplayers-nav-border.png") repeat-y scroll right top transparent;
+}
+#navigation ul#nice-menu-2 li a {
+  color: rgb(78, 43, 25);
+  font-weight: bold;
+  font-size: 1.08em;
+  padding: 12px 17px;
+}
+#navigation ul#nice-menu-2 ul {
+  top: auto;
+  border: none;
+}
+#navigation ul#nice-menu-2 ul li {
+  /*background-color: #986b2a;*/
+  background-color: rgba(209, 168, 89, 0.9);
+  /*background-color: rgba(152,107, 42, 0.9);*/
+  background-image: none;
+  width: 100%;
+}
+#navigation ul#nice-menu-2 ul li:hover a {
+  text-decoration: underline;
+}
+#navigation ul#nice-menu-2 ul li a {
+  color: rgb(78, 43, 25);
+}
+.view-crlt-grant-applications {
+  font-size: 0.9em;
+}
+.view-crlt-grant-applications .views-field-field-grant-app-reviewers-value p {
+  margin: 0px;
+  padding: 0px;
+}

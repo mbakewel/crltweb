@@ -1,0 +1,5 @@
+name = CRLT Signup Migration
+description = The CRLT Signup Migration Module.
+core = 6.x
+package = Other
+

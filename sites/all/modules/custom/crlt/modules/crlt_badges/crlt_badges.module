@@ -1,0 +1,369 @@
+<?php
+
+/**
+* VERY IMPORTANT
+*
+* For this module to function properly, its system weight must be greater
+* than the workflow module's system weight.
+*
+* For example:
+*
+* select weight from system where name = 'crlt_badges';
+* select weight from system where name = 'workflow';
+* update system set weight = 1 where name = 'crlt_badges';
+*
+*/
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_badges_menu() {
+  $items = array();
+  $items['crlt/badges/user-certificate-migration'] = array(
+    'title' => 'CRLT Badges User Certificate Migration',
+    'page callback' => 'crlt_badges_user_certificate_migration',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+/**
+ * Given a row from the cert/dm/profile_gallery View and a badge type,
+ * this will return a rendered image for it.
+ */
+function crlt_badge_image($row, $badge) {
+  $status = $row->{'profile_values_profile_badge_' . $badge . '_value'};
+  $path = 'sites/default/files/badges/profile_badge_' . $badge . '_' . $status . '.jpg';
+  if (!file_exists($path)) { return ''; }
+  $text = ucfirst(str_replace('_', ' ', $status));
+  $alt = 'Certificate ' . $badge . ' - ' . $text;
+  $title = $alt;
+  $alt = 'Picture of ' . $alt;
+  $attributes = array('class' => 'crlt_badge_image');
+  return theme('image', $path, $alt, $title, $attributes);
+}
+
+/**
+* Implements hook_node_api().
+*/
+function crlt_badges_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  // We only care about acting on insert, update and delete of certificates.
+  // Note, this hook does get fired when the node's workflow tab form is submitted.
+  // We also don't care about operating on expired certificates, so skip those.
+  if ($node->type != 'certificate') { return; }
+  if ($op != 'insert' && $op != 'update' && $op != 'delete') { return; }
+  if ($node->workflow == 13) { return; }
+  
+  // Define the certificate badges that can be earned. FYI, these do not match exactly with
+  // the certificate type machine names.
+  $badges = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J');
+  $types = array('A', 'B1', 'B1_mc', 'B1_it', 'B2', 'C1', 'C2', 'D', 'E', 'F', 'F0', 'G', 'G_it', 'H', 'I', 'J');
+
+  // Grab all the certificates authored by this user that are published and not
+  // denied or cancelled.
+  $sql = " SELECT
+             n.nid,
+             n.title,
+             n.changed,
+             ctc.field_certificate_type_value as type,
+             ws.sid,
+             ws.state
+           FROM {node} n
+           INNER JOIN {content_type_certificate} ctc ON n.nid = ctc.nid
+           INNER JOIN {workflow_node} wn ON n.nid = wn.nid
+           INNER JOIN {workflow_states} ws ON wn.sid = ws.sid
+           WHERE
+             n.uid = %d AND
+             n.type = 'certificate' AND
+             n.vid = ctc.vid AND
+             n.status = 1 AND
+             wn.sid NOT IN (11, 12, 13)
+           GROUP BY n.nid
+           ORDER BY n.changed DESC ";
+  $results = db_query($sql, $node->uid);
+
+  // Figure out how many of each type of certificate there are,
+  // how many badges there are, and keep a tally of the approved types.
+  // Set each aside so we can iterate over them again.
+  $badge_counts = array();
+  $type_counts = array();
+  $approved_types = array(); // Keep track of each type that has been approved.
+  $approved_counts = array(); //
+  $certificates = array(); // Hold onto a copy of the certificates so we can iterate over them again.
+  foreach ($badges as $b) { $badge_counts[$b] = 0; }
+  foreach ($types as $t) {
+    $type_counts[$t] = 0;
+    $approved_counts[$t] = 0;
+  }
+  // Keep track of the most recent certificate node's 'changed' time so we can
+  // set this on the user's profile as their "last participation time".
+  $count = 0;
+  $last_participation_time = null;
+  while ($data = db_fetch_object($results)) {
+    if ($data->sid == 10) { $approved_counts[$data->type] += 1; }
+    $type_counts[$data->type] += 1;
+    foreach($badges as $b) {
+      if (strpos($data->type, $b) !== FALSE) {
+        $badge_counts[$b] += 1;
+        break;
+      }
+    }
+    $certificates[] = $data;
+    if ($count == 0) { $last_participation_time = $data->changed; }
+    $count++;
+  }
+
+  // If we just inserted a node, we need to manually add it to the collection
+  // because for whatever reason(s) it isn't yet available in the results
+  // fetched via sql earlier.
+  if ($op == 'insert') {
+    $type = $node->field_certificate_type[0]['value'];
+    if ($node->workflow == 10) { $approved_counts[$type] += 1; }
+    $type_counts[$type] += 1;
+    foreach($badges as $b) {
+      if (strpos($type, $b) !== FALSE) {
+        $badge_counts[$b] += 1;
+        break;
+      }
+    }
+  }
+
+  //drupal_set_message('<pre>' . print_r($badge_counts, true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($type_counts, true) . '</pre>');
+
+  // Iterate over each certificate and determine if it is not started, in progress, or completed.
+  // We'll assume all of them have not been started, if they are found to be in progress, or completed,
+  // we'll remove them from the not started collection.
+  $certs = array(
+    'type_counts' => $type_counts,
+    'approved_counts' => $approved_counts,
+    'badge_counts' => $badge_counts,
+    /* node certificate types */
+    'types' => array(
+      'not_started' => $types,
+      'in_progress' => array(),
+      'completed' => array()
+    ),
+    /* actual badges that can be earned*/
+    'badges' => array(
+      'not_started' => $badges,
+      'in_progress' => array(),
+      'completed' => array()
+    )
+  );
+  // Remove any types that have been started, and place them as in progress.
+  foreach ($type_counts as $t => $count) {
+    if ($count > 0) {
+      unset($certs['types']['not_started'][array_search($t, $certs['types']['not_started'])]);
+      $certs['types']['in_progress'][] = $t;
+    }
+  }
+  // Remove any badges that have been started, and place them as in progress.
+  foreach ($badge_counts as $b => $count) {
+    if ($count > 0) {
+      unset($certs['badges']['not_started'][array_search($b, $certs['badges']['not_started'])]);
+      $certs['badges']['in_progress'][] = $b;
+    }
+  }
+
+  // For each type that has been approved, move it out of in process and into completed.
+  foreach ($certificates as $certificate) {
+    if ($certificate->sid == 10/* && !in_array($certificate->type, $approved_types)*/) {
+      //$approved_types[] = $certificate->type;
+      crlt_badges_move_from_in_process_to_completed($certs, 'types', $certificate->type);
+    }
+  }
+
+  // Now determine which badges the account has earned. If a badge is earned, place it in
+  // the 'completed' arrays, and remove it from the 'in_progress' arrays.
+
+  // A
+  $badge = 'A';
+  // 1 = completed
+  if ($approved_counts[$badge] >= 1) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // B
+  $badge = 'B';
+  // 1 B2 = completed OR
+  // 5 B1 = completed (any combo of B1, B1_mc, B1_it that add up to 5, but at least one must be IT and one MC.
+  if (
+    $approved_counts['B2'] >= 1 ||
+    (
+      ($approved_counts['B1'] + $approved_counts['B1_mc'] + $approved_counts['B1_it'] >= 5) &&
+      $approved_counts['B1_mc'] >= 1 && $approved_counts['B1_it'] >= 1
+    )
+  ) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // C
+  $badge = 'C';
+  // 2 C1 and 1 C2 = completed
+  if (
+    $approved_counts['C1'] >= 2 &&
+    $approved_counts['C2'] >= 1
+  ) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // D
+  $badge = 'D';
+  // 1 = completed
+  if ($approved_counts[$badge] >= 1) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // E
+  $badge = 'E';
+  // 1 = completed
+  if ($approved_counts[$badge] >= 1) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // F
+  $badge = 'F';
+  // F and F0 = completed
+  if (
+    $approved_counts['F'] >= 1 &&
+    $approved_counts['F0'] >= 1
+  ) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // G
+  $badge = 'G';
+  // G and G_it, need 5 of them, but no more than 2 can be G_it.
+  if ($approved_counts['G'] >= 3 && $approved_counts['G_it'] >= 2) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // H
+  $badge = 'H';
+  // 1 = completed
+  if ($approved_counts[$badge] >= 1) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // I
+  $badge = 'I';
+  // 2 I's = completed
+  if ($approved_counts[$badge] >= 2) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  // J
+  $badge = 'J';
+  // 1 = completed
+  if ($approved_counts[$badge] >= 1) {
+    crlt_badges_move_from_in_process_to_completed($certs, 'badges', $badge);
+  }
+
+  //drupal_set_message('<pre>' . print_r($certs, true) . '</pre>');
+
+  // Now that we've got the badges assembled and sorted by their completion status,
+  // let's update the user's badge profile fields with these values.
+  $fields = array();
+  foreach($certs['badges'] as $status => $badges) {
+    foreach($badges as $badge) {
+      $fields['profile_badge_' . $badge] = $status;
+    }
+  }
+  // If there is a last participate time, set it. Unless we received a special
+  // instruction from crlt_certificate_sync_expire_old_certificates_batch_process()
+  // not to do it
+  if ($last_participation_time) {
+    if (isset($a3) && !$a3) { }
+    else {
+      $fields['profile_certificate_last_participation_time'] = $last_participation_time;
+    }
+  }
+  //drupal_set_message('<pre>' . print_r($fields, true) . '</pre>');
+  if (!empty($fields)) {
+    $account = user_load($node->uid);
+    crlt_user_save($account, $fields);
+  }
+}
+
+function crlt_badges_move_from_in_process_to_completed(&$certs, $bucket, $item) {
+  if (!in_array($item, $certs[$bucket]['completed'])) {
+    $certs[$bucket]['completed'][] = $item;
+    unset($certs[$bucket]['in_progress'][array_search($item, $certs[$bucket]['in_progress'])]);
+  }
+}
+
+/**
+ * Given a user id, this will calculate the date and time when they last
+ * participated in the certificate program.
+ */
+function crlt_badges_update_user_account_last_participation_time($uid) {
+  
+  // Load the user account.
+  $account = user_load($uid);
+  if (!$account) {
+    drupal_set_message('crlt_badges_update_user_account_last_participation_time - Failed to load user account! (' . $uid . ')', 'error');
+    return;
+  }
+  
+  $date = null;
+  
+  // When did they last attend an event that is eligible for a certificate?
+  $fields = array();
+  $events = views_get_view_result('crlt_user_cert_eligible_events', null, $account->uid);
+  foreach($events as $event) {
+    $date = strtotime($event->node_signup_log_node_data_field_event_dates_field_event_dates_value);
+    break;
+  }
+  
+  // Grab a list of all of the user's certificates.
+  $sql = " SELECT nid FROM {node} WHERE type = 'certificate' AND uid = %d ";
+  $certificates = db_query($sql, $uid);
+  while ($data = db_fetch_object($certificates)) {
+    $certificate = node_load($data->nid);
+    $cert_date = null;
+    switch ($certificate->field_certificate_type[0]['value']) {
+      // Event end date (covered above).
+      case 'A':
+      case 'B':
+        break;
+      // Certificate node creation date.
+      case 'C1':
+      case 'D':
+      case 'F':
+      case 'F0':
+        $cert_date = $node->created;
+        break;
+      // Consultation service date if node created by system, otherwise use
+      // certificate node creation date.
+      case 'C2':
+      case 'E':
+        if ($certificate->field_certificate_source[0]['value'] == 'consultation') {
+          $consultation = node_load($certificate->field_certificate_source_id[0]['value']);
+          $cert_date = $consultation->field_date[0]['value'];
+        }
+        else { $cert_date = $node->created; }
+        break;
+      default:
+        $cert_date = $node->created;
+        break;
+    }
+    // Use the certificate date if it is greater than the date we already have.
+    if ($cert_date) {
+      if (!is_int($cert_date)) { strtotime($cert_date); }
+      if ($date) {
+        if ($cert_date > $date) { $date = $cert_date; }
+      }
+      else { $date = $cert_date; }
+    }
+  }
+
+  // Finally, update the date on their profile.
+  if ($date) {
+    $fields['profile_certificate_last_participation_time'] = $date;
+    crlt_user_save($account, $fields);
+    //drupal_set_message("Updated the last participation time for " . l($account->name, "user/$account->uid/edit/Certificates") . " to " . date('Y-m-d', $date));
+  }
+  
+}
+

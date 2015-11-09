@@ -1,0 +1,27 @@
+diff --git a/sites/all/modules/signup/js/signup_edit_form.js b/sites/all/modules/signup/js/signup_edit_form.js
+index 8856e2b..52892f2 100644
+--- a/sites/all/modules/signup/js/signup_edit_form.js
++++ b/sites/all/modules/signup/js/signup_edit_form.js
+@@ -10,13 +10,10 @@
+  */
+ Drupal.behaviors.enableSignupEditForm = function(context) {
+   if (!Drupal.settings.signupEditFormErrors) {
+-    var $button = $('#edit-save', context).click(enableSave);
++    $('#edit-save').val(Drupal.t('Save changes'));
+     var $form = $button.parents('form:first');
+     var $form_elements = $form.find(':visible');
+     var original_button_title = $button.val();
+-
+-    $form_elements.attr('disabled', 'disabled');
+-    $button.attr('disabled', '').val(Drupal.t('Edit'));
+   }
+  
+   function enableSave() {
+@@ -24,5 +21,7 @@ Drupal.behaviors.enableSignupEditForm = function(context) {
+     $button.unbind('click', enableSave).val(original_button_title);
+     return false;
+   }
++
++  
+ }
+ 

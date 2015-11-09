@@ -1,0 +1,5 @@
+name = CRLT Badges
+description = The CRLT Badges module.
+core = 6.x
+package = Other
+

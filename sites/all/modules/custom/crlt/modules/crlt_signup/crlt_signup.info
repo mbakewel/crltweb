@@ -1,0 +1,4 @@
+name = CRLT Signup
+description = The CRLT Signup module.
+core = 6.x
+package = Other

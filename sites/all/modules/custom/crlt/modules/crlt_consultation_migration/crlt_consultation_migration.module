@@ -1,0 +1,62 @@
+<?php
+
+function crlt_consultation_migration_menu() {
+  $items = array();
+  $items['crlt/consultation/migration-batch'] = array(
+    'title' => 'Consultation Migration Batch',
+    'page callback' => 'crlt_consultation_migration_batch',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+function crlt_consultation_migration_batch() {
+  return 'BATCH ALREADY RAN!';
+  $sql = " select cl.field_client_uid as cert_owner, c.nid as source_id, field_consult_type_value as title_or_note  from content_type_consultation c
+left join content_field_client cl on cl.vid = c.vid
+left join profile_values pv on pv.uid = cl.field_client_uid and pv.fid = 2
+where field_consult_type_value in ('Midterm Student Feedback','Teaching Consultation - Student Evaluations','Teaching Consultation - Classroom Observation','Teaching Consultation - Video Taping')
+and field_status_value = 'Complete'
+and pv.value = 'Graduate Student'
+and not exists (
+select 'x'
+from node n , content_type_certificate cert
+where n.type = 'certificate'
+and n.vid = cert.vid
+and n.uid = cl.field_client_uid
+and field_certificate_type_value = 'C2') limit 10 "; // 2000
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_consultation_migration_batch_process', array($data->source_id));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_consultation_migration_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_consultation_migration_batch_process($nid, &$context) {
+  global $user;
+  $node = node_load($nid);
+  // We'll fake an update to the cert node.
+  crlt_certificate_sync_nodeapi(&$node, 'update');
+  $context['message'] = t('Processing @title', array('@title' => $node->title));
+}
+
+function crlt_consultation_migration_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/consultation/migration-batch'));
+}
+

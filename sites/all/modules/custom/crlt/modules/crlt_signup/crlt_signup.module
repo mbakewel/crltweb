@@ -1,0 +1,538 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_signup_menu() {
+  $items = array();
+  $items['crlt/signup/bulk-users/%'] = array(
+    'type' => NORMAL_MENU_ITEM,
+    'title' => 'Bulk Signup Users',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_signup_bulk_users'),
+    'access arguments' => array('administer all signups')
+  );
+  $items['crlt/signup/spreadsheet/%'] = array(
+    'type' => NORMAL_MENU_ITEM,
+    'title' => 'Download Signup Spreadsheet',
+    'page callback' => 'crlt_signup_spreadsheet_download',
+    'page arguments' => array(3),
+    'access arguments' => array('administer all signups')
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function crlt_signup_form_alter(&$form, &$form_state, $form_id) {
+
+  global $user;
+
+  /*if (in_array('admin', $user->roles)) {
+    drupal_set_message($form['#id']);
+    drupal_set_message($form_id);
+    drupal_set_message('<pre>' . print_r($form, true) . '</pre>');
+  }*/
+
+  // Make modifications to the signup form.
+  if ($form_id == 'signup_form') {
+    
+    // Attach a custom validate and submit handler.
+    $form['#validate'][] = 'crlt_signup_form_validate';
+    $form['#submit'][] = 'crlt_signup_form_submit';
+    // Place a link to the 'bulk register user' widget on the front of the form for admins.
+    if ($user->uid && (in_array('admin', $user->roles) || in_array('CRLT Staff', $user->roles))) {
+      $prefix = '+ ' . l('CRLT Signup Overview', 'crlt/signup/overview') . '<br />' .
+                '+ ' . l('Bulk Signup Users', 'crlt/signup/bulk-users/' . $form['nid']['#value']) . '<br />' .
+                '+ ' . l('Events Calendar', 'eventscalendar');
+      $form['#prefix'] .= $prefix;
+    }
+    
+    // If there is a webform file component present on the form, attach a custom
+    // submission handler for it. Also attach the proper enctype to the form.
+    if (
+      isset($form['collapse']) &&
+      isset($form['collapse']['signup_user_form']) &&
+      isset($form['collapse']['signup_user_form']['signup_form_data'])
+    ) {
+      foreach($form['collapse']['signup_user_form']['signup_form_data'] as $name => $element) {
+        if (!is_array($element)) { continue; }
+        if ($element['#type'] != 'file') { continue; }
+        if (!isset($form['#attributes'])) { $form['#attributes'] = array(); }
+        $form['#attributes']['enctype'] = 'multipart/form-data';
+        if (!isset($form['#validate'])) { $form['#validate'] = array(); }
+        if (!isset($form['#submit'])) { $form['#submit'] = array(); }
+        if (!in_array('crlt_signup_form_file_validate', $form['#validate'])) {
+          $form['#validate'][] = 'crlt_signup_form_file_validate';
+        }
+        if (!in_array('crlt_signup_form_file_submit', $form['#submit'])) {
+          $form['#submit'][] = 'crlt_signup_form_file_submit';
+        }
+      }
+    }
+    
+  }
+  // Make modifications to the signup edit form.
+  else if ($form_id == 'signup_edit_form') {
+    // Note, it seems 'not possible' to attach a custom submit handler to this form. 
+    // Place a link to the 'bulk register user' widget on the front of the form for admins.
+    if ($user->uid && (in_array('admin', $user->roles) || in_array('CRLT Staff', $user->roles))) {
+      $prefix = '+ ' . l('CRLT Signup Overview', 'crlt/signup/overview') . '<br />' .
+                '+ ' . l('Bulk Signup Users', 'crlt/signup/bulk-users/' . $form['#signup']->nid) . '<br />' .
+                '+ ' . l('Events Calendar', 'eventscalendar');
+      $form['#prefix'] .= $prefix;
+    }
+  }
+}
+
+/**
+ * A custom validate handler for the signup form.
+ */
+function crlt_signup_form_validate($form, &$form_state) {
+  // The department field is required if school or college is lsa, engineering or administration.
+  if (in_array($form_state['values']['signup_form_data']['unit'], array('Administration', 'Engineering', 'LSA')) &&
+      $form_state['values']['signup_form_data']['department'] == "") {
+    form_set_error('signup_form_data][department', t('Select the Department for ' . $form_state['values']['signup_form_data']['unit'] . '.'));
+  }
+}
+
+/**
+ * A custom submit handler for the signup form.
+ */
+function crlt_signup_form_submit($form, &$form_state) {
+  global $user;
+  //drupal_set_message('<pre>' . print_r($form_state['values'], true) . '</pre>');
+  // Try to load an existing user account from the sign up e-mail address,
+  // if the account doesn't exist, create a new user account and load it up.
+  if (!isset($form_state['values']['email_address'])) { return; }
+  $mail = $form_state['values']['email_address'];
+  $sql = "SELECT uid FROM {users} WHERE mail = '%s'";
+  $uid = db_result(db_query($sql, $mail));
+  $account = null;
+  if ($uid) {
+    $account = user_load($uid);
+  }
+  else {
+    $fields = array(
+      'name' => $name,
+      'mail' => $mail,
+      'pass' => user_password(8),
+      'status' => 1
+    );
+    $account = user_save('', $fields);
+    if ($account) {
+      $uid = $account->uid;
+    }
+    else {
+      drupal_set_message('Failed to save new user account for ' . $mail, 'warning');
+      return;
+    }
+  }
+
+  // For each profile field, try to grab the value from the sign up form data
+  // and put together the fields and then update the user account's profile fields.
+  $sql = "SELECT * FROM {profile_fields} WHERE fid <> 1 ORDER BY weight ASC ";
+  $results = db_query($sql);
+  $fields = array();
+  while ($data = db_fetch_object($results)) {
+    if (isset($form_state['values']['signup_form_data'][$data->name])) {
+      $fields[$data->name] = $form_state['values']['signup_form_data'][$data->name];
+    }
+  }
+  if (!empty($fields)) {
+    crlt_user_save($account, $fields);
+    if ($user->uid && (in_array('admin', $user->roles) || in_array('CRLT Staff', $user->roles))) {
+      drupal_set_message("The user's profile field values were updated!");
+    }
+  }
+}
+
+/**
+ * The form to bulk signup users for an event. 
+ */
+function crlt_signup_bulk_users($form, &$form_state) {
+  $form = array();
+  $node = node_load(arg(3));
+  if (!$node) {
+    drupal_set_message('crlt_signup_bulk_users_form() - Failed to load node', 'error');
+    return $form;
+  }
+  $breadcrumb = array(l($node->title, "node/$node->nid"));
+  drupal_set_breadcrumb($breadcrumb);
+  $form['#prefix'] = '<p>Use this form to bulk signup users for an event.</p>';
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $node->nid,
+    '#required' => TRUE
+  );
+  $form['users'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Users',
+    '#suffix' => 'Enter a list of uniqnames or e-mail addresses, separated by comma or enter one per line.',
+    '#required' => TRUE
+  );
+  // Build the attendence options.
+  $options = array();
+  $options[-1] = t('- Not recorded -');
+  $options[2] = theme('signup_attended_text', 2);
+  $options[1] = theme('signup_attended_text', 1);
+  $options[0] = theme('signup_attended_text', 0);
+  $form['attended'] = array(
+    '#type' => 'select',
+    '#title' => t('Attendance'),
+    '#default_value' => -1,
+    '#options' => $options
+  );
+  // Bulid the status code options select list.
+  $sql = " SELECT * FROM {signup_status_codes} ORDER BY weight ASC ";
+  $results = db_query($sql);
+  $options = array();
+  while ($data = db_fetch_object($results)) {
+    $options[$data->cid] = $data->name;
+  }
+  $form['signup_status'] = array(
+    '#type' => 'select',
+    '#title' => 'Status',
+    '#options' => $options,
+    '#default_value' => -1
+  );
+  // Add some profile fields to the form.
+  $sql = "SELECT * FROM {profile_fields} WHERE fid IN (" . implode(',', crlt_signup_profile_field_ids()) . ") ORDER BY weight ASC";
+  $elements = crlt_generate_user_profile_field_form_elements($sql, false);
+  foreach($elements as $name => $element) {
+    $form[$name] = $element;
+  }
+  // E-mail notification element.
+  $form['email_notification'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Send out e-mail notification to user(s)'
+  );
+  // Submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Signup Users for ' . $node->title,
+  );
+  $form['cancel'] = array(
+    '#type' => 'button',
+    '#value' => 'Cancel',
+    '#attributes' => array('onclick' => "javascript:window.location = '" . crlt_site_domain() . url('node/' . $node->nid)  . "'; return false;")
+  );
+  return $form;
+}
+
+/**
+ *
+ */
+function crlt_signup_bulk_users_validate($form, &$form_state) {
+  // The department field is required if school or college is lsa, engineering or administration.
+  if (in_array($form_state['values']['unit'], array('Administration', 'Engineering', 'LSA')) &&
+      $form_state['values']['department'] == "") {
+    form_set_error('department', t('Select the Department for ' . $form_state['values']['unit'] . '.'));
+  }
+}
+
+/**
+ *
+ */
+function crlt_signup_bulk_users_submit($form, &$form_state) {
+  //drupal_set_message('<pre>' . print_r($form_state['values'], true) . '</pre>');
+
+  // If the signup is closed, we need to temporarily open it up, then close it when we're done.
+  $signup_was_closed = FALSE;
+  $nid = $form_state['values']['nid'];
+  $event = node_load($nid);
+  if (!$event->signup_status) {
+    $signup_was_closed = TRUE;
+    signup_open_signup($nid);
+  }
+
+  // Replace all the new lines with commas, then split by comma to get the list of users.
+  $input = $form_state['values']['users'];
+  $input = preg_replace("/((\r?\n)|(\r\n?))/", ',', $input);
+  $users = explode(',', $input);
+  // Grab the profile field ids and names that we're using on the form.
+  $sql = "SELECT fid, name FROM {profile_fields} WHERE fid IN (" . implode(',', crlt_signup_profile_field_ids()) . ") ORDER BY weight ASC";
+  $results = db_query($sql);
+  $fids = array();
+  while ($data = db_fetch_object($results)) {
+    $fids[$data->fid] = $data->name;
+  }
+  // Build the signup form data.
+  $signup_form_data = array();
+  foreach($fids as $fid => $name) {
+    $signup_form_data[$name] = $form_state['values'][$name];
+  }
+  // Signup each user...
+  foreach($users as $user) {
+    $user = trim($user);
+    if ($user == '') { continue; }
+    $account = null;
+    $uid = null;
+    $name = null;
+    $mail = null;
+    $new_account = false;
+    // Try to load an existing user by mail or uniqname.
+    if (valid_email_address($user)) {
+      $mail = $user;
+      $uid = db_result(db_query("SELECT uid FROM {users} WHERE mail = '%s'", $mail));
+      if ($uid) { $account = user_load($uid); }
+    }
+    else {
+      $name = $user;
+      $uid = db_result(db_query("SELECT uid FROM {users} WHERE name = '%s'", $name));
+      if ($uid) { $account = user_load($uid); }
+    }
+    // There wasn't an account, create a new one.
+    if (!$account) {
+      if (!$name) {
+        $name = substr($mail, 0, strpos($mail, '@'));
+      }
+      elseif (!$mail) {
+        $mail = $name . "@umich.edu";
+      }
+      $fields = array(
+        'name' => $name,
+        'mail' => $mail,
+        'pass' => user_password(8),
+        'status' => 1
+      );
+      // Attach the profile fields to new users.
+      foreach($fids as $fid => $name) {
+        $fields[$name] = $form_state['values'][$name];
+      }
+      $account = user_save('', $fields);
+      if ($account) {
+        $new_account = true;
+        $account_link = l($account->name . " ($mail)", "user/$account->uid");
+        drupal_set_message("Created new user $account_link!");
+      }
+    }
+    // We have the user account, let's sign them up.
+    $account_link = l($account->name . " ({$account->mail})", "user/$account->uid");
+    // If we have a new user account we'll use the default signup form data submitted,
+    // otherwise we'll use the profile field values from the existing user.
+    // Except for the Rank profile field, we'll let the value specified on the
+    // bulk signup form be used in place of an existing user's Rank value.
+    $account_signup_form_data = $signup_form_data;
+    if (!$new_account) {
+      $account_modified = FALSE;
+      $fields = array();
+      $keys = array_keys($signup_form_data);
+      foreach ($keys as $key) {
+        if (isset($account->$key)) {
+          $account_signup_form_data[$key] = $account->$key;
+        }
+        else {
+          // The account value wasn't set, let's use the value from the form.
+          $account->$key = $account_signup_form_data[$key];
+          $fields[$key] = $account_signup_form_data[$key];
+          $account_modified = TRUE;
+        }
+        // The Rank field is the one value we want to listen to on the form,
+        // regardless of what value is on the user account's profile, so let's
+        // use it in the signup form data.
+        if ($key == "Rank") {
+          $account_signup_form_data[$key] = $signup_form_data[$key];
+        }
+      }
+      if ($account_modified) {
+        drupal_set_message("An existing user account ($account->name) had a profile value(s) that weren't yet set, setting them now.");
+        crlt_user_save($account, $fields);
+      }
+    }
+    $signup_form = array(
+      'nid' => $nid,
+      'uid' => $account->uid,
+      'signup_form_data' => $account_signup_form_data,
+      'signup_status' => $form_state['values']['signup_status'],
+      'attended' => $form_state['values']['attended']
+    );
+    if (signup_sign_up_user($signup_form, $form_state['values']['email_notification'], TRUE)) {
+      drupal_set_message("Signed up user $account_link!");
+    }
+else {
+      drupal_set_message("Failed to sign up user $account_link!", 'error');
+    }
+  }
+  if ($signup_was_closed) {
+    signup_close_signup($nid);
+  }
+  drupal_goto('node/' . $nid);
+}
+
+/**
+ * Returns an array of fid values to be used on a signup form.
+ */
+function crlt_signup_profile_field_ids() {
+  return array(2,3,4,7);
+}
+
+/**
+ * The page callback to download an CSV file of the signup roster.
+ */
+function crlt_signup_spreadsheet_download($nid) {
+  $output = '';
+  $node = node_load($nid);
+  //drupal_set_message('<pre>' . print_r($node->webform, true) . '</pre>');
+  //$filename = strtolower(str_replace(' ', '-', $node->title)) . '.xls';
+  $filename = strtolower(str_replace(' ', '-', $node->title)) . '.csv';
+  // The 'BM_signup_status_user_vbo_admin' view has the majority
+  // of the data we need, so let's grab those results first.
+  $view_name = 'BM_signup_status_user_vbo_admin';
+  $display = 'default';
+  $view = views_get_view($view_name);
+  $results = views_get_view_result($view_name, $display, $nid);
+  if (!$results || sizeof($results) == 0) {
+    return "No signups found!";
+  }
+  // Render the column headers...
+  $columns = array_keys(get_object_vars($results[0]));
+  // We can ignore most of the default column headers provided by views
+  // since most are not needed or will be available in the custom signup 
+  // form data later.
+  $ignore_columns = array(
+    'sid',
+    'signup_log_nid',
+    'signup_log_uid',
+    'users_signup_log_profile_values_profile_last_name_uid',
+    'users_signup_log_profile_values_profile_last_name_value',
+    'users_signup_log_profile_values_profile_first_name_uid',
+    'users_signup_log_profile_values_profile_first_name_value',
+    'users_signup_log_uid',
+    'signup_log_form_data'
+  );
+  foreach($ignore_columns as $key) {
+    unset($columns[array_search($key, $columns)]);
+  }
+  // Find the result with the most keys inside the signup fom data
+  // value, then place each custom signup form data onto the column headers.
+  $signup_form_data = array();
+  $signup_form_data_keys = array();
+  foreach($results as $result) {
+    $data = unserialize($result->signup_log_form_data);
+    if (sizeof($data) > sizeof($signup_form_data)) {
+      $signup_form_data = $data;
+      $signup_form_data_keys = array_keys($signup_form_data);
+    }
+  }
+  foreach($signup_form_data as $key => $value) {
+    $columns[] = $key;
+  }
+  // Now render the column headers.
+  foreach($columns as $field_name) {
+    $output .= "$field_name,";
+  }
+  $output = substr($output, 0, strlen($output)-1);
+  $output .= "\r\n";
+// Render the rows.
+  foreach ($results as $index => $result) {
+    $row = '';
+    foreach($columns as $field_name) {
+      if (in_array($field_name, $signup_form_data_keys)) { continue; }
+      $value = " ";
+      if (isset($result->$field_name)) {
+        switch ($field_name) {
+          case 'signup_log_signup_time':
+            $value = date('Y-m-d h:i:s', $result->$field_name);
+            break;
+          default:
+            $value = "{$result->$field_name}";
+            break;
+        }
+      }
+      $row .= strip_tags($value) . ",";
+    }
+    // Extract the signup form data for this result.
+    $result_signup_form_data = unserialize($result->signup_log_form_data);
+    foreach($signup_form_data_keys as $key) {
+      $value = " ";
+      if (isset($result_signup_form_data[$key])) {
+        $value = $result_signup_form_data[$key];
+        // If this happens to be a file webform component, we need to output
+        // the file URI instead of the file id.
+        if (isset($node->webform) && !empty($node->webform['components'])) {
+          foreach ($node->webform['components'] as $cid => $component) {
+            if ($component['form_key'] == $key && $component['type'] == 'file') {
+              $file = field_file_load($value);
+              if ($file && is_array($file) && $file['fid'] != 0) {
+                $value = crlt_site_domain() . '/' . $file['filepath'];
+              }
+              break;
+            }
+          }
+        }
+        
+      }
+      $row .= '"' . strip_tags($value) . '",';
+    }
+    $row = substr($row, 0, strlen($row)-1);
+    $output .= "$row\r\n";
+  }
+  //return $output;
+
+  // Ouput the CSV file.
+  drupal_set_header('Content-Type: text/csv; utf-8');
+  drupal_set_header("Content-Disposition: attachment; filename = $filename");
+  print $output;
+}
+
+/**
+ *
+ */
+function crlt_signup_form_file_validate($form, &$form_state) {
+  if (
+    isset($form['collapse']) &&
+    isset($form['collapse']['signup_user_form']) &&
+    isset($form['collapse']['signup_user_form']['signup_form_data'])
+  ) {
+    foreach($form['collapse']['signup_user_form']['signup_form_data'] as $name => $element) {
+      if (!is_array($element)) { continue; }
+      if ($element['#type'] != 'file') { continue; }
+      
+      $file = file_save_upload('signup_form_data');
+    
+      // If the file passed validation:
+      if (isset($file->filename)) {
+        // Move the file, into the Drupal file system
+        if (file_move($file, $file->filename)) {
+          // Update the new file location in the database.
+          drupal_write_record('files', $file, 'fid');
+          // Save the file for use in the submit handler.
+          $form_state['storage']['signup_form_data'] = $file;
+          // Set the file id into the signup form data.
+          $form_state['values']['signup_form_data'][$name] = $file->fid;
+        }
+        else {
+          form_set_error('file', t('Failed to write the uploaded file to the site\'s file folder.'));
+        }
+      }
+      else {
+        form_set_error('file', t('Invalid file.'));
+      }
+    }
+  }
+  
+}
+
+/**
+ *
+ */
+function crlt_signup_form_file_submit($form, &$form_state) {
+  if (
+    isset($form['collapse']) &&
+    isset($form['collapse']['signup_user_form']) &&
+    isset($form['collapse']['signup_user_form']['signup_form_data'])
+  ) {
+    foreach($form['collapse']['signup_user_form']['signup_form_data'] as $name => $element) {
+      if (!is_array($element)) { continue; }
+      if ($element['#type'] != 'file') { continue; }
+      $file = $form_state['storage']['signup_form_data'];
+      // We are done with the file, remove it from storage.
+      unset($form_state['storage']['signup_form_data']);
+      // Make the storage of the file permanent
+      file_set_status($file, FILE_STATUS_PERMANENT);
+    }
+  }
+}
+

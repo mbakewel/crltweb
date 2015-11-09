@@ -1,0 +1,550 @@
+<?php
+
+/**
+ * @file
+ * Module file for Search by Page Paths, a sub-module for Search by Page.
+ *
+ * Allows you to add Drupal pages, such as Views pages, to Search by Page.
+ * @ingroup search_by_page
+ */
+
+/**
+ * Implementation of Search by Page hook_sbp_paths().
+ *
+ * Reads path information stored in the database, and returns it.
+ */
+function sbp_paths_sbp_paths($environment) {
+
+  $min_time = search_by_page_setting_get('sbp_paths_min_time', $environment, 1);
+  $max_time = search_by_page_setting_get('sbp_paths_max_time', $environment, 0);
+
+  $res = db_query('SELECT * FROM {sbpp_path} p WHERE p.environment=%d', $environment);
+  $ret = array();
+
+  while ($item = db_fetch_object($res)) {
+    // This comes from checkboxes, so it looks like 'en' => 1, 'es' => 0, etc.
+    $languages = @unserialize($item->languages);
+    $langs = array();
+    if (is_array($languages)) {
+      foreach ($languages as $lang => $val) {
+        if ($val) {
+          $langs[] = $lang;
+        }
+      }
+    }
+
+    $ret[$item->page_path] = array(
+      'id' => $item->pid,
+      'role' => $item->role,
+      'languages' => $langs,
+      'min_time' => $min_time,
+      'max_time' => $max_time,
+    );
+  }
+
+  return $ret;
+}
+
+/**
+ * Implementation of Search by Page hook_sbp_query_modify().
+ *
+ * Adds an access permission check to the search query.
+ */
+function sbp_paths_sbp_query_modify($environment) {
+  // Unfortunately, we don't have a wholesale way to check access permissions.
+  // So we have to go through all the paths in our table, and check whether the
+  // user has permission to see each one, by querying the menu system.
+  // Hopefully, there aren't too many! We store them in a temporary table.
+
+  // Create temporary table
+  $table = 'sbptt' . rand();
+  db_query_temporary('SELECT p.pid, 1 as perm FROM {sbpp_path} p WHERE p.environment=%d', $environment, $table);
+
+  // Check permissions on each path, store in temporary table
+
+  $res = db_query('SELECT p.pid, p.page_path FROM {sbpp_path} p WHERE p.environment=%d', $environment);
+  while ($item = db_fetch_object($res)) {
+    $parts = search_by_page_path_parts($item->page_path);
+    $mitem = menu_get_item($parts[0]);
+    db_query("UPDATE $table SET perm=%d WHERE pid=%d", $mitem['access'], $item->pid);
+  }
+
+  // Join to our temporary table
+
+  return array(
+    'join' => 'LEFT JOIN ' . $table . ' sbpp ON sbpp.pid = sp.modid',
+    'where' => 'sbpp.perm = 1',
+    'arguments' => array(),
+  );
+}
+
+/**
+ * Implementation of Search by Page hook_sbp_details().
+ *
+ * Reads details information stored in the database, extracts snippet
+ * if necessary, and returns it.
+ */
+function sbp_paths_sbp_details($id, $environment, $keys = NULL) {
+  global $_GET;
+
+  // Get info from DB
+
+  $res = db_query('SELECT p.pid, p.title, p.page_path, p.page_type, p.snippet FROM {sbpp_path} p WHERE p.pid = %d', $id);
+
+  $item = db_fetch_object($res);
+  if (!$item->pid) {
+    return NULL;
+  }
+
+  // Translate if necessary
+  if (module_exists('i18nstrings')) {
+    $code = 'sbp_paths:path:' . $item->pid . ':';
+    $item->title = i18nstrings($code . 'title', $item->title);
+    $item->page_type = i18nstrings($code . 'type', $item->page_type);
+    $snip = drupal_strtolower($item->snippet);
+    if ($snip != 'yes' && $snip != 'no') {
+      $item->snippet = i18nstrings($code . 'snippet', $item->snippet);
+    }
+  }
+
+  // Basic page info
+
+  $ret = array(
+    'type' => $item->page_type,
+    'title' => search_by_page_strip_tags($item->title, $environment),
+  );
+
+  // Snippet -- DB either stores "yes", "no", or a custom snippet to use
+
+  $code = drupal_strtolower($item->snippet);
+  if ($code == 'yes' && $keys) {
+    // Get snippet from page content
+    $parts = search_by_page_path_parts($item->page_path);
+    $path = drupal_get_normal_path($parts[0]);
+    if (isset($parts[1])) {
+      $getstuff = array();
+      parse_str($parts[1], $getstuff);
+      $_GET += $getstuff;
+    }
+    $content = menu_execute_active_handler($path);
+    $content = search_by_page_strip_tags($content, $environment);
+    $tmp_get = $_GET;
+    if (!is_int($content)) {
+      $ret['snippet'] = search_by_page_excerpt($keys, $content);
+    }
+    $_GET = $tmp_get;
+  }
+  elseif ($code != 'no' && $keys) {
+    // User-supplied custom snippet
+    $ret['snippet'] = search_by_page_strip_tags($item->snippet, $environment);
+  }
+
+  return $ret;
+}
+
+/**
+ * Implementation of Search by Page hook_sbp_settings().
+ *
+ * Adds a few settings to the Search by Page settings page.
+ */
+function sbp_paths_sbp_settings($environment) {
+
+  $form = array();
+  $form['sbp_paths'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#weight' => -80,
+    '#title' => t('Paths'),
+  );
+
+  $times = array(
+    '1' => t('1 second'),
+    '3600' => t('1 hour'),
+    '86400' => t('1 day'),
+    '604800' => t('1 week'),
+    '31449600' => t('1 year'),
+    '0' => t('Never'),
+  );
+
+  $form['sbp_paths']['sbp_paths_min_time'] = array(
+    '#type' => 'select',
+    '#title' => t('Minimum reindexing time'),
+    '#options' => $times,
+    '#default_value' => search_by_page_setting_get('sbp_paths_min_time', $environment, 1),
+    '#weight' => 5,
+    '#description' => t("After indexing any new pages added to the environment, Search by Page also cycles through previously-indexed pages, in case the rendered view of the page has changed. On some sites, you may want to limit the amount of reindexing, by setting a minimum time -- the page will not be reindexed until this time has passed."),
+  );
+
+  $form['sbp_paths']['sbp_paths_max_time'] = array(
+    '#type' => 'select',
+    '#title' => t('Maximum reindexing time'),
+    '#options' => $times,
+    '#default_value' => search_by_page_setting_get('sbp_paths_max_time', $environment, 0),
+    '#weight' => 6,
+    '#description' => t("Conversely to the minimum reindexing time (see above), Search by Page can be set to prioritize reindexing each page (by marking it as needing immediate reindexing) after this amount of time has passed. This has higher priority than the cycle-through reindexing of the setting above.") . ' ' . t('But be careful with this setting! If you set it too small, it can interfere with new content being indexed, because the reindexed content will have equal priority to content that has never been indexed. So make sure your settings allow for enough time for new content to be indexed before forcing reindexing.'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implementation of hook_menu().
+ *
+ * Defines a tab on Search by Page environment edit that lists the paths
+ * to be indexed, with ability to add, edit, and delete them.
+ */
+function sbp_paths_menu() {
+
+  $items = array();
+
+  $items['admin/settings/search_by_page/edit/%/paths'] = array(
+    'title' => 'Paths',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 0,
+    'page callback' => '_sbp_paths_list_page',
+    'page arguments' => array(4),
+    'access arguments' => array('administer search by page'),
+  );
+
+  $items['admin/settings/search_by_page/edit/%/paths/edit'] = array(
+    'title' => 'Edit path',
+    'type' => MENU_CALLBACK,
+    'page callback' => '_sbp_paths_edit',
+    'page arguments' => array(4),
+    'access arguments' => array('administer search by page'),
+  );
+
+  $items['admin/settings/search_by_page/edit/%/paths/add'] = array(
+    'title' => 'Add path',
+    'type' => MENU_CALLBACK,
+    'page callback' => '_sbp_paths_edit',
+    'page arguments' => array(4),
+    'access arguments' => array('administer search by page'),
+  );
+
+  $items['admin/settings/search_by_page/edit/%/paths/delete'] = array(
+    'title' => 'Delete path',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sbp_paths_delete_confirm', 4),
+    'access arguments' => array('administer search by page'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_locale().
+ */
+function sbp_paths_locale($op = 'groups', $group = NULL) {
+  switch ($op) {
+    case 'groups':
+      return array('sbp_paths' => t('Search by Page Paths'));
+
+    case 'info':
+      $info = array();
+      $info['spb_paths']['refresh callback'] = '_sbp_paths_refresh_translations';
+      $info['sbp_paths']['format'] = FALSE;
+      return $info;
+  }
+}
+
+/**
+ * Page callback for path listings page.
+ *
+ * Builds a page that lists existing paths to index, with links to edit,
+ * delete, and add new.
+ */
+function _sbp_paths_list_page($environment) {
+
+  $output = '';
+
+  $environment = intval($environment);
+
+  // Overview
+
+  $output .= '<p>' .
+    t('This page allows you to define pages on your site to be indexed by the Search by Page module in this environment.') . '</p>' . "\n";
+
+  // Link to add a new path
+
+  $basepath = 'admin/settings/search_by_page/edit/' . $environment . '/paths/';
+  $output .= '<p>' .
+    l(t('Add new path'),
+      $basepath . 'add') .
+    '</p>' . "\n";
+
+  // List existing paths in a table, with edit/delete links
+  // and use a pager
+
+  $qry = 'SELECT p.pid, p.page_path, p.title FROM {sbpp_path} p WHERE environment=%d ORDER BY p.page_path';
+  $result = pager_query($qry, 50, 0, NULL, $environment);
+
+  $headers = array(t('Path'), t('Title'),
+    array('data' => t('Operations'),
+      'colspan' => 2));
+
+  $rows = array();
+  while ($data = db_fetch_object($result)) {
+    $rows[] = array(
+      check_plain($data->page_path),
+      check_plain($data->title),
+      l(t('edit'), $basepath . 'edit/' . $data->pid),
+      l(t('delete'), $basepath . 'delete/' . $data->pid),
+    );
+  }
+
+  $output .= theme('table', $headers, $rows);
+
+  $output .= theme('pager', NULL, 50);
+
+  return $output;
+}
+
+/**
+ * Edits or adds new path.
+ */
+function _sbp_paths_edit($environment, $pid = 0) {
+  if ($pid) {
+    $values = db_fetch_array(db_query('SELECT * FROM {sbpp_path} p WHERE p.pid = %d', $pid));
+    $values['languages'] = @unserialize($values['languages']);
+    if (!$values['languages']) {
+      $values['languages'] = array();
+    }
+    return drupal_get_form('sbp_paths_edit_form', $values);
+  }
+  else {
+    return drupal_get_form('sbp_paths_edit_form', array('environment' => $environment));
+  }
+}
+
+/**
+ * Returns a form for editing a path item.
+ *
+ * @ingroup forms
+ * @see sbp_paths_edit_form_submit()
+ */
+function sbp_paths_edit_form(&$form_state, $edit = array()) {
+  global $language;
+
+  $edit = array_merge(array('pid' => 0, 'page_path' => '', 'title' => '', 'page_type' => 'Page', 'snippet' => 'yes', 'environment' => 0, 'role' => DRUPAL_ANONYMOUS_RID, 'languages' => array()), $edit);
+
+  $edit['environment'] = intval($edit['environment']);
+
+  $form = array();
+
+  $form['path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page to index'),
+    '#default_value' => $edit['page_path'],
+    '#size' => 45,
+    '#description' => t('Specify a page on your site that you want to index. Do not include the language prefix, if any.'),
+    '#field_prefix' => search_by_page_path_field_prefix(),
+    '#required' => TRUE,
+  );
+
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title of page'),
+    '#default_value' => $edit['title'],
+    '#size' => 45,
+    '#description' => t('Title to display in search results for this page'),
+    '#required' => TRUE,
+  );
+
+  $form['type'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Type of page'),
+    '#default_value' => $edit['page_type'],
+    '#size' => 45,
+    '#description' => t('Type to display in search results for this page'),
+    '#required' => TRUE,
+  );
+
+  $form['snippet'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Snippet'),
+    '#default_value' => $edit['snippet'],
+    '#cols' => 45,
+    '#rows' => 5,
+    '#description' => t('Enter "yes" (without the quotes, in English) to show a "snippet" of this page in search results, extracted from the page (it should show a portion of the page that contains the search results). Enter "no" (without the quotes, in English) to omit the snippet entirely. Or, enter any other text to use that custom text as the snippet for search results display.'),
+    '#required' => TRUE,
+  );
+
+  if (module_exists('locale')) {
+    $form['texthelp'] = array(
+      '#type' => 'markup',
+      '#value' => '<p>' . t("Enter the title, type, and snippet above in your site's default language. If you have a multi-lingual site with the Internationalization project's String Translation module installed and enabled, you can use Drupal's translation interface to translate them.") . '</p>',
+    );
+
+    $form['languages'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Languages'),
+      '#description' => t('Indicate which languages this page can be viewed in. It will be indexed in each language for searching.'),
+      '#options' => locale_language_list('name'),
+      '#default_value' => $edit['languages'],
+    );
+  }
+  else {
+    $form['languages'] = array(
+      '#type' => 'value',
+      '#value' => array($language->language => TRUE),
+    );
+  }
+
+  $form['role'] = array(
+    '#type' => 'radios',
+    '#title' => t('Role for indexing'),
+    '#options' => user_roles(),
+    '#default_value' => $edit['role'],
+    '#weight' => 4,
+    '#description' => t("When Search by Page indexes this page for searching, the page will be viewed from the perspective and permissions of a user with this role."),
+  );
+
+  if ($edit['pid']) {
+    $form['pid'] = array('#type' => 'value', '#value' => $edit['pid']);
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Update indexed page'));
+  }
+  else {
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Create new indexed page'));
+  }
+
+  $form['submit']['#weight'] = 5;
+
+  $form['environment'] = array('#type' => 'value', '#value' => $edit['environment']);
+
+  $form['cancel'] = array(
+    '#value' => "<p>" . l(t('Cancel'),
+      'admin/settings/search_by_page/edit/' . $edit['environment'] . '/paths') . "</p>",
+    '#weight' => 6,
+  );
+
+  return $form;
+}
+
+/**
+ * Submit callback for sbp_paths_edit_form().
+ *
+ * Adds/edits the path to be indexed, and updates database of paths.
+ */
+function sbp_paths_edit_form_submit($form, &$form_state) {
+
+  $vals = $form_state['values'];
+  $langs = serialize($vals['languages']);
+  $envid = intval($vals['environment']);
+
+  // Save the new information
+  if (isset($vals['pid']) && $vals['pid']) {
+    db_query("UPDATE {sbpp_path} SET environment=%d, page_path='%s', title='%s', page_type='%s', snippet='%s', role=%d, languages='%s' WHERE pid='%d'", $envid, $vals['path'], $vals['title'], $vals['type'], $vals['snippet'], $vals['role'], $langs, $vals['pid']);
+
+    // Force this to be reindexed
+    search_by_page_force_reindex('sbp_paths', $vals['pid'], $envid);
+
+  }
+  else {
+    db_query("INSERT INTO {sbpp_path} (environment, page_path, title, page_type, snippet, role, languages) VALUES (%d, '%s', '%s', '%s', '%s', %d, '%s')", $envid, $vals['path'], $vals['title'], $vals['type'], $vals['snippet'], $vals['role'], $langs);
+    $vals['pid'] = db_last_insert_id('sbpp_path', 'pid');
+  }
+
+  // Update the translation strings
+  _sbp_paths_update_translation($vals);
+
+  // Go back to the paths list
+
+  drupal_set_message(t('The page to index has been saved'));
+  $form_state['redirect'] = 'admin/settings/search_by_page/edit/' . $envid . '/paths';
+}
+
+
+/**
+ * Returns a form confirming deletion a path to be indexed.
+ *
+ * @ingroup forms
+ * @see sbp_paths_delete_confirm_submit()
+ */
+function sbp_paths_delete_confirm(&$form_state, $environment, $pid) {
+
+  $res = db_query('SELECT p.page_path FROM {sbpp_path} p WHERE p.pid = %d', $pid);
+  $item = db_fetch_object($res);
+
+  $environment = intval($environment);
+  $form = array(
+    'pid' => array('#type' => 'value', '#value' => $pid),
+    'environment' => array('#type' => 'value', '#value' => $environment),
+  );
+
+  $output = confirm_form($form,
+      t('Are you sure you want to stop indexing %path in this environment?',
+        array('%path' => $item->page_path)),
+    'admin/settings/search_by_page/edit/' . $environment . '/paths');
+
+  return $output;
+}
+
+/**
+ * Submit callback for sbp_paths_delete_confirm().
+ *
+ * Actually deletes the path.
+ */
+function sbp_paths_delete_confirm_submit($form, &$form_state) {
+
+  if (!$form_state['values']['confirm']) {
+    return;
+  }
+
+  $pid = $form_state['values']['pid'];
+  if (!$pid) {
+    return;
+  }
+
+  // Remove it from our database, and also from current search index
+
+  db_query('DELETE FROM {sbpp_path} WHERE pid=%d', $pid);
+
+  $environment = intval($form_state['values']['environment']);
+  search_by_page_force_remove('sbp_paths', $pid, $environment);
+
+  // Go back to paths page
+
+  $form_state['redirect'] = 'admin/settings/search_by_page/edit/' . $environment . '/paths';
+}
+
+/**
+ * Implementation of hook_sbp_delete_environment().
+ *
+ * Removes the environment from paths database table.
+ */
+function sbp_paths_sbp_delete_environment($environment) {
+  $envid = intval($environment);
+  db_query('DELETE FROM {sbpp_path} WHERE environment=%d', $envid);
+}
+
+/**
+ * Refreshes string translations for i18nstrings module.
+ */
+function _sbp_paths_refresh_translations() {
+  if (module_exists('i18nstrings')) {
+    $res = db_query('SELECT * FROM {sbpp_path} p');
+    while ($vals = db_fetch_array($res)) {
+      _sbp_paths_update_translation($vals);
+    }
+  }
+}
+
+/**
+ * Updates the strings to be translated for one path record.
+ *
+ * @param $vals
+ *    Associative array of information from sbpp_path table.
+ */
+function _sbp_paths_update_translation($vals) {
+  if (module_exists('i18nstrings') && $vals['pid']) {
+    $code = 'sbp_paths:path:' . $vals['pid'] . ':';
+    i18nstrings_update($code . 'title', $vals['title']);
+    i18nstrings_update($code . 'type', $vals['type']);
+    $snip = drupal_strtolower($vals['snippet']);
+    if ($snip != 'yes' && $snip != 'no') {
+      i18nstrings_update($code . 'snippet', $vals['snippet']);
+    }
+  }
+}

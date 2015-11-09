@@ -1,0 +1,9 @@
+name = CRLT Grant Application Review
+description = Custom features for the CRLT Grant Application Review content type
+core = 6.x
+package = CRLT Grants
+scripts[] = crlt_grant_application_review.js
+dependencies[] = ctools
+dependencies[] = crlt_grant
+dependencies[] = crlt_grant_application
+dependencies[] = views

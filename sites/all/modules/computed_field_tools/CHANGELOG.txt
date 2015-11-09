@@ -1,0 +1,10 @@
+Computed Field Tools 6.x-1.1
+============================
+
+Features
+- While batch processing it now displays an estimated time left and remaining items rather than processed items.
+
+Bugfixes:
+- #1494178 by frakke: Now not storing unchanged data thus avoiding warnings and gaining some performance.
+- by frakke: Removed dependency on views.
+- by frakke: When the content of a computed field is changed, the content cache for the node is cleared which makes the new content available immediately.

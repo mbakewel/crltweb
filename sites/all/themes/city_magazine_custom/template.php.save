@@ -1,0 +1,406 @@
+<?php  
+// $Id$
+
+/**		
+ * @file
+ * Contains theme override functions and preprocess functions for the theme.
+ *
+ * ABOUT THE TEMPLATE.PHP FILE
+ *
+ *   The template.php file is one of the most useful files when creating or
+ *   modifying Drupal themes. You can add new regions for block content, modify
+ *   or override Drupal's theme functions, intercept or make additional
+ *   variables available to your theme, and create custom PHP logic. For more
+ *   information, please visit the Theme Developer's Guide on Drupal.org:
+ *   http://drupal.org/theme-guide
+ *
+ * OVERRIDING THEME FUNCTIONS
+ *
+ *   The Drupal theme system uses special theme functions to generate HTML
+ *   output automatically. Often we wish to customize this HTML output. To do
+ *   this, we have to override the theme function. You have to first find the
+ *   theme function that generates the output, and then "catch" it and modify it
+ *   here. The easiest way to do it is to copy the original function in its
+ *   entirety and paste it here, changing the prefix from theme_ to city_magazine_custom_.
+ *   For example:
+ *
+ *     original: theme_breadcrumb()
+ *     theme override: city_magazine_custom_breadcrumb()
+ *
+ *   where city_magazine_custom is the name of your sub-theme.
+ *
+ *   If you would like to override any of the theme functions used in city_magazine core,
+ *   you should first look at how Comaco core implements those functions:
+ *     theme_breadcrumbs()      in city_magazine/template.php
+ *     theme_menu_item_link()   in city_magazine/template.php
+ *     theme_menu_local_tasks() in city_magazine/template.php
+ *
+ *   For more information, please visit the Theme Developer's Guide on
+ *   Drupal.org: http://drupal.org/node/173880
+ *
+ * CREATE OR MODIFY VARIABLES FOR YOUR THEME
+ *
+ *   Each tpl.php template file has several variables which hold various pieces
+ *   of content. You can modify those variables (or add new ones) before they
+ *   are used in the template files by using preprocess functions.
+ *
+ *   This makes THEME_preprocess_HOOK() functions the most powerful functions
+ *   available to themers.
+ *
+ *   It works by having one preprocess function for each template file or its
+ *   derivatives (called template suggestions). For example:
+ *     THEME_preprocess_page    alters the variables for page.tpl.php
+ *     THEME_preprocess_node    alters the variables for node.tpl.php or
+ *                              for node-forum.tpl.php
+ *     THEME_preprocess_comment alters the variables for comment.tpl.php
+ *     THEME_preprocess_block   alters the variables for block.tpl.php
+ *
+ *   For more information on preprocess functions and template suggestions,
+ *   please visit the Theme Developer's Guide on Drupal.org:
+ *   http://drupal.org/node/223440
+ *   and http://drupal.org/node/190815#template-suggestions
+ */
+
+
+/*
+ * Add any conditional stylesheets you will need for this sub-theme.
+ *
+ * To add stylesheets that ALWAYS need to be included, you should add them to
+ * your .info file instead. Only use this section if you are including
+ * stylesheets based on certain conditions.
+ */
+
+
+/**
+ * Implementation of HOOK_theme().
+ */
+function city_magazine_custom(&$existing, $type, $theme, $path) {
+  $hooks = city_magazine($existing, $type, $theme, $path);
+  // Add your theme hooks like this:
+  /*
+  $hooks['hook_name_here'] = array( // Details go here );
+  */
+  // @TODO: Needs detailed comments. Patches welcome!
+  return $hooks;
+}
+
+/**
+ * Override or insert variables into all templates.
+ *
+ * @param $vars
+ *   An array of variables to pass to the theme template.
+ * @param $hook
+ *   The name of the template being rendered (name of the .tpl.php file.)
+ */
+/* -- Delete this line if you want to use this function
+function city_magazine_custom_preprocess(&$vars, $hook) {
+  $vars['sample_variable'] = t('Lorem ipsum.');
+}
+// */
+
+/**
+ * Override or insert variables into the page templates.
+ *
+ * @param $vars
+ *   An array of variables to pass to the theme template.
+ * @param $hook
+ *   The name of the template being rendered ("page" in this case.)
+ */
+/* -- Delete this line if you want to use this function
+function city_magazine_custom_preprocess_page(&$vars, $hook) {
+  $vars['sample_variable'] = t('Lorem ipsum.');
+}
+// */
+
+/**
+ * Override or insert variables into the node templates.
+ *
+ * @param $vars
+ *   An array of variables to pass to the theme template.
+ * @param $hook
+ *   The name of the template being rendered ("node" in this case.)
+ */
+/* -- Delete this line if you want to use this function
+function city_magazine_custom_preprocess_node(&$vars, $hook) {
+  $vars['sample_variable'] = t('Lorem ipsum.');
+}
+// */
+
+/**
+ * Override or insert variables into the comment templates.
+ *
+ * @param $vars
+ *   An array of variables to pass to the theme template.
+ * @param $hook
+ *   The name of the template being rendered ("comment" in this case.)
+ */
+/* -- Delete this line if you want to use this function
+function city_magazine_custom_preprocess_comment(&$vars, $hook) {
+  $vars['sample_variable'] = t('Lorem ipsum.');
+}
+// */
+
+/** 
+ * Override or insert variables into the block templates.
+ *
+ * @param $vars
+ *   An array of variables to pass to the theme template.
+ * @param $hook
+ *   The name of the template being rendered ("block" in this case.)
+ */
+ /* -- Delete this line if you want to use this function
+function city_magazine_custom_preprocess_block(&$vars, $hook) {
+  $vars['sample_variable'] = t('Lorem ipsum.');
+}
+// */
+
+function phptemplate_signup_user_form($node) {
+  global $user;
+  $form = array();
+  if (variable_get('signup_ignore_default_fields', 0)) {
+    return $form;
+  }
+  // If this function is providing any extra fields at all, the following
+  // line is required for form form to work -- DO NOT EDIT OR REMOVE.
+  $form['signup_form_data']['#tree'] = TRUE;
+
+  /*
+  $form['signup_form_data']['Phone'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Phone'),
+    '#size' => 40, '#maxlength' => 64,
+  );
+  */
+
+  //// Begin custom fields
+  $form['signup_form_data']['HSunit'] = array(
+    '#type' => 'select',
+    '#title' => t('Unit'),
+    '#options' => $options,
+  );
+
+  // Get uniqname
+  $form['signup_form_data']['Name'] = array(
+    '#type' => 'hidden',
+    /*
+    '#type' => 'textfield',
+    */
+    '#title' => t('Uniqname'),
+    '#size' => 10, '#maxlength' => 20,
+    /*
+    '#required' => TRUE,
+    */
+  );
+
+  $options = array();
+  $options['no choice'] = '- Please choose -';
+  $options['Faculty'] = 'Faculty';
+  $options['Graduate Student'] = 'Graduate Student';
+  $options['Postdoc'] = 'Postdoc';
+  $options['Staff'] = 'Staff';
+  $form['signup_form_data']['status'] = array(
+    '#type' => 'select',
+    '#title' => t('Primary Appointment'),
+    '#options' => $options,
+  );
+
+  $options = array();
+  $options['no choice'] = '- Please choose -';
+  $options['Administration'] = 'Administration';
+  $options['Architecture_and_Urban_Planning'] = 'Architecture and Urban Planning';
+  $options['Art_&_Design'] = 'Art & Design';
+  $options['Business'] = 'Business';
+  $options['Dentistry'] = 'Dentistry';
+  $options['Education'] = 'Education';
+  $options['Engineering'] = 'Engineering';
+  $options['Information'] = 'Information';
+  $options['Kinesiology'] = 'Kinesiology';
+  $options['Law'] = 'Law';
+  $options['Libraries_(UM)'] = 'Libraries (UM)';
+  $options['LSA'] = 'LSA';
+  $options['Medical_School'] = 'Medical School';
+  $options['Music,_Theatre_&_Dance'] = 'Music, Theatre & Dance';
+  $options['Natural_Resources_and_Environment'] = 'Natural Resources and Environment';
+  $options['Nursing'] = 'Nursing';
+  $options['Officer_Education'] = 'Officer Education';
+  $options['Pharmacy'] = 'Pharmacy';
+  $options['Public_Health'] = 'Public Health';
+  $options['Public_Policy'] = 'Public Policy';
+  $options['Rackham_Admin_(NO_GSIs)'] = 'Rackham Admin (NO GSIs)';
+  $options['Social_Work'] = 'Social Work';
+  $options['U-M_Dearborn'] = 'U-M Dearborn';
+  $options['U-M_Flint'] = 'U-M Flint';
+  $options['Other'] = 'Other';
+  $options['External'] = 'External';
+  $form['signup_form_data']['unit'] = array(
+    '#type' => 'select',
+    '#title' => t('Unit'),
+    '#options' => $options,
+  );
+
+  $options = array();
+  $options['no choice'] = '- Choose one, if in Administration, LS&A or Engineering -';
+  $options['Administration-Admissions'] = 'Administration - Admissions';
+  $options['Administration-Career_Center'] = 'Administration - Career Center';
+  $options['Administration-Communications'] = 'Administration - Communications';
+  $options['Administration-HR'] = 'Administration - HR';
+  $options['Administration-NCID'] = 'Administration - NCID';
+  $options['Administration-Office_of_New_Student_Programs'] = 'Administration - Office of New Student Programs';
+  $options['Administration-Office_of_the_President'] = 'Administration - Office of the President';
+  $options['Administration-OVPR'] = 'Administration - OVPR';
+  $options['Administration-Provost_Office'] = 'Administration - Provost Office';
+  $options['Administration-Public_Goods_Council'] = 'Administration - Public Goods Council';
+  $options['Administration-Student_Affairs'] = 'Administration - Student Affairs';
+  $options['Engineering-Aerospace_Engineering'] = 'Engineering - Aerospace Engineering';
+  $options['Engineering-Applied_Physics'] = 'Engineering - Applied Physics';
+  $options['Engineering-Atmospheric,_Oceanic_&_Space_Sciences_(AOSS)'] = 'Engineering - Atmospheric, Oceanic & Space Sciences (AOSS)';
+  $options['Engineering-Biomedical_Engineering'] = 'Engineering - Biomedical Engineering';
+  $options['Engineering-Chemical_Engineering'] = 'Engineering - Chemical Engineering';
+  $options['Engineering-Civil_and_Environmental_Engineering'] = 'Engineering - Civil and Environmental Engineering';
+  $options['Engineering-Electric_Engineering_and_Computer_Science'] = 'Engineering - Electric Engineering and Computer Science';
+  $options['Engineering-Engineering_Graduate_Education'] = 'Engineering - Engineering Graduate Education';
+  $options['Engineering-Industrial_and_Operations_Engineering'] = 'Engineering - Industrial and Operations Engineering';
+  $options['Engineering-InterPro'] = 'Engineering - InterPro';
+  $options['Engineering-Macromolecular_Sci_&_Engr'] = 'Engineering - Macromolecular Sci & Engr';
+  $options['Engineering-Materials_Science_and_Engineering'] = 'Engineering - Materials Science and Engineering';
+  $options['Engineering-Mechanical_Engineering_'] = 'Engineering - Mechanical Engineering ';
+  $options['Engineering-Naval_Architecture_and_Marine_Engineering'] = 'Engineering - Naval Architecture and Marine Engineering';
+  $options['Engineering-Nuclear_Engineering_and_Radiological_Sciences'] = 'Engineering - Nuclear Engineering and Radiological Sciences';
+  $options['Engineering-Technical_Communication'] = 'Engineering - Technical Communication';
+  $options['LSA-Afroamerican_and_African_Studies'] = 'LSA - Afroamerican and African Studies';
+  $options['LSA-American_Culture'] = 'LSA - American Culture';
+  $options['LSA-Anthropology'] = 'LSA - Anthropology';
+  $options['LSA-Applied_Physics'] = 'LSA - Applied Physics';
+  $options['LSA-Armenian_Studies_Program'] = 'LSA - Armenian Studies Program';
+  $options['LSA-Asian_Languages_and_Cultures'] = 'LSA - Asian Languages and Cultures';
+  $options['LSA-Astronomy'] = 'LSA - Astronomy';
+  $options['LSA-Biology'] = 'LSA - Biology';
+  $options['LSA-Biophysics'] = 'LSA - Biophysics';
+  $options['LSA-Chemistry'] = 'LSA - Chemistry';
+  $options['LSA-Chinese_Studies'] = 'LSA - Chinese Studies';
+  $options['LSA-Classic_Art_and_Archaeology_(IPCAA)'] = 'LSA - Classic Art and Archaeology (IPCAA)';
+  $options['LSA-Classical_Studies'] = 'LSA - Classical Studies';
+  $options['LSA-Communication_Studies'] = 'LSA - Communication Studies';
+  $options['LSA-Comparative_Literature'] = 'LSA - Comparative Literature';
+  $options['LSA-Complex_Systems'] = 'LSA - Complex Systems';
+  $options['LSA-Comprehensive_Studies'] = 'LSA - Comprehensive Studies';
+  $options['LSA-Computer_Science'] = 'LSA - Computer Science';
+  $options['LSA-Dean\'s_Office'] = 'LSA - Dean\'s Office';
+  $options['LSA-Ecology_and_Evolutionary_Biology'] = 'LSA - Ecology and Evolutionary Biology';
+  $options['LSA-Economics'] = 'LSA - Economics';
+  $options['LSA-English_Language_Institute'] = 'LSA - English Language Institute';
+  $options['LSA-English_Language_and_Literature'] = 'LSA - English Language and Literature';
+  $options['LSA-Environmental_Health_Sciences'] = 'LSA - Environmental Health Sciences';
+  $options['LSA-European_Studies'] = 'LSA - European Studies';
+  $options['LSA-General_Studies'] = 'LSA - General Studies';
+  $options['LSA-Earth_and_Environmental_Sciences'] = 'LSA - Earth and Environmental Sciences';
+  $options['LSA-Germanic_Languages_and_Literatures'] = 'LSA - Germanic Languages and Literatures';
+  $options['LSA-Great_Books'] = 'LSA - Great Books';
+  $options['LSA-Health_Science_Scholars_Program'] = 'LSA - Health Science Scholars Program';
+  $options['LSA-History'] = 'LSA - History';
+  $options['LSA-History_of_Art'] = 'LSA - History of Art';
+  $options['LSA-Honors_Program'] = 'LSA - Honors Program';
+  $options['LSA-Institute_for_the_Humanities'] = 'LSA - Institute for the Humanities';
+  $options['LSA-International_and_Comparative_Studies'] = 'LSA - International and Comparative Studies';
+  $options['LSA-International_Institute'] = 'LSA - International Institute';
+  $options['LSA-Japanese_Studies'] = 'LSA - Japanese Studies';
+  $options['LSA-Judaic_Studies'] = 'LSA - Judaic Studies';
+  $options['LSA-Korean_Studies'] = 'LSA - Korean Studies';
+  $options['LSA-Language_Resource_Center'] = 'LSA - Language Resource Center';
+  $options['LSA-Latin_American_and_Caribbean_Studies'] = 'LSA - Latin American and Caribbean Studies';
+  $options['LSA-Linguistics'] = 'LSA - Linguistics';
+  $options['LSA-Lloyd_Hall_Scholars'] = 'LSA - Lloyd Hall Scholars';
+  $options['LSA-LSA_Advising_Center'] = 'LSA - LSA Advising Center';
+  $options['LSA-LSA_ISS'] = 'LSA - LSA ISS';
+  $options['LSA-Mathematics'] = 'LSA - Mathematics';
+  $options['LSA-Middle_Eastern_and_North_African_Studies'] = 'LSA - Middle Eastern and North African Studies';
+  $options['LSA-Molecular,_Cellular,_and_Developmental_Biology'] = 'LSA - Molecular, Cellular, and Developmental Biology';
+  $options['LSA-Museum_of_Archaeology'] = 'LSA - Museum of Archaeology';
+  $options['LSA-Museum_of_Zoology'] = 'LSA - Museum of Zoology';
+  $options['LSA-Naval_Officer_Education_Program'] = 'LSA - Naval Officer Education Program';
+  $options['LSA-Near_Eastern_Studies'] = 'LSA - Near Eastern Studies';
+  $options['LSA-Neuroscience'] = 'LSA - Neuroscience';
+  $options['LSA-Office_of_International_Programs_(OIP)'] = 'LSA - Office of International Programs (OIP)';
+  $options['LSA-Organizational_Studies'] = 'LSA - Organizational Studies';
+  $options['LSA-Philosophy'] = 'LSA - Philosophy';
+  $options['LSA-Physics'] = 'LSA - Physics';
+  $options['LSA-Political_Science'] = 'LSA - Political Science';
+  $options['LSA-Program_in_the_Environment_(PITE)'] = 'LSA - Program in the Environment (PITE)';
+  $options['LSA-Program_on_Intergroup_Relations_(IGR)'] = 'LSA - Program on Intergroup Relations (IGR)';
+  $options['LSA-Psychology'] = 'LSA - Psychology';
+  $options['LSA-Residential_College'] = 'LSA - Residential College';
+  $options['LSA-Romance_Languages_and_Literatures'] = 'LSA - Romance Languages and Literatures';
+  $options['LSA-Russian_and_East_European_Studies'] = 'LSA - Russian and East European Studies';
+  $options['LSA-Science_Learning_Center'] = 'LSA - Science Learning Center';
+  $options['LSA-Screen_Arts_and_Cultures'] = 'LSA - Screen Arts and Cultures';
+  $options['LSA-Slavic_Languages_and_Literatures'] = 'LSA - Slavic Languages and Literatures';
+  $options['LSA-Sociology'] = 'LSA - Sociology';
+  $options['LSA-South_and_Southeast_Asian_Studies'] = 'LSA - South and Southeast Asian Studies';
+  $options['LSA-Statistics'] = 'LSA - Statistics';
+  $options['LSA-Sweetland_Writing_Center'] = 'LSA - Sweetland Writing Center';
+  $options['LSA-UROP'] = 'LSA - UROP';
+  $options['LSA-Women\'s_Studies'] = 'LSA - Women\'s Studies';
+  $form['signup_form_data']['dept'] = array(
+    '#type' => 'select',
+    '#title' => t('Department'),
+    '#options' => $options,
+  );
+
+  $form['signup_form_data']['regfirstname'] = array(
+    '#type' => 'textfield',
+    '#title' => t('First Name'),
+    '#size' => 40, '#maxlength' => 64,
+    '#required' => TRUE,
+  );
+
+  $form['signup_form_data']['reglastname'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Last Name'),
+    '#size' => 40, '#maxlength' => 64,
+    '#required' => TRUE,
+  );
+  
+  $options = array();
+  $options['no choice'] = '- Please choose -';
+  $options['M+Box'] = 'M+Box';
+  $options['Blogger'] = 'Blogger';
+  $options['Google Docs'] = 'Google Docs';
+  $options['Piazza'] = 'Piazza';
+  $form['signup_form_data']['techoption'] = array(
+    '#type' => 'select',
+    '#title' => t('Which of the following technologies do you MOST want to use in your teaching?'),
+    '#options' => $options,
+  );
+
+  $form['signup_form_data']['useplan'] = array(
+    '#type' => 'textarea',
+    '#title' => t('How do you want to use this technology in your teaching?'),
+    '#wysiwyg' => false,
+  );
+
+  $form['signup_form_data']['learningneed'] = array(
+    '#type' => 'textarea',
+    '#title' => t('What do you need to learn to help you take the next step?'),
+    '#wysiwyg' => false,
+  );
+
+  $form['signup_form_data']['comments'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Comments'),
+    '#wysiwyg' => false,
+  );
+  // End custom fields
+
+  // If the user is logged in, fill in their name by default.
+  if ($user->uid) {
+    $form['signup_form_data']['Name']['#default_value'] = $user->name;
+  }
+
+  return $form;
+}
+
+function city_magazine_custom_preprocess_page(&$variables) {
+  if($variables['node']->type != "") {
+    $variables['template_files'][] = 'page-node-' . $variables['node']->type;
+  }
+}

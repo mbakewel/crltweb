@@ -1,0 +1,446 @@
+$view = new view;
+$view->name = 'my_upcoming_events';
+$view->description = 'A list of the upcoming events the user is registered for.';
+$view->tag = 'attendance, events';
+$view->base_table = 'node';
+$view->core = 6;
+$view->api_version = '2';
+$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+$handler = $view->new_display('default', 'Defaults', 'default');
+$handler->override_option('fields', array(
+  'field_event_dates_value' => array(
+    'label' => 'Dates',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 0,
+    'label_type' => 'widget',
+    'format' => 'short_date_numeric',
+    'multiple' => array(
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_to' => '',
+      'group' => 1,
+    ),
+    'repeat' => array(
+      'show_repeat_rule' => '',
+    ),
+    'fromto' => array(
+      'fromto' => 'both',
+    ),
+    'exclude' => 0,
+    'id' => 'field_event_dates_value',
+    'table' => 'node_data_field_event_dates',
+    'field' => 'field_event_dates_value',
+    'relationship' => 'none',
+  ),
+  'title' => array(
+    'label' => 'Title',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 1,
+    'exclude' => 0,
+    'id' => 'title',
+    'table' => 'node',
+    'field' => 'title',
+    'relationship' => 'none',
+  ),
+  'status' => array(
+    'label' => 'Registered?',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'exclude' => 0,
+    'id' => 'status',
+    'table' => 'signup_log',
+    'field' => 'status',
+    'relationship' => 'none',
+  ),
+  'attended' => array(
+    'id' => 'attended',
+    'table' => 'signup_log',
+    'field' => 'attended',
+  ),
+  'status_1' => array(
+    'id' => 'status_1',
+    'table' => 'signup_log',
+    'field' => 'status',
+  ),
+));
+$handler->override_option('sorts', array(
+  'field_event_dates_value' => array(
+    'order' => 'ASC',
+    'delta' => '-1',
+    'id' => 'field_event_dates_value',
+    'table' => 'node_data_field_event_dates',
+    'field' => 'field_event_dates_value',
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('filters', array(
+  'type' => array(
+    'operator' => 'in',
+    'value' => array(
+      'events' => 'events',
+    ),
+    'group' => '0',
+    'exposed' => FALSE,
+    'expose' => array(
+      'operator' => FALSE,
+      'label' => '',
+    ),
+    'id' => 'type',
+    'table' => 'node',
+    'field' => 'type',
+    'relationship' => 'none',
+  ),
+  'status' => array(
+    'operator' => 'in',
+    'value' => array(
+      1 => '1',
+      2 => '2',
+      4 => '4',
+      5 => '5',
+    ),
+    'group' => '0',
+    'exposed' => FALSE,
+    'expose' => array(
+      'operator' => FALSE,
+      'label' => '',
+    ),
+    'id' => 'status',
+    'table' => 'signup_log',
+    'field' => 'status',
+    'relationship' => 'none',
+  ),
+  'uid' => array(
+    'operator' => 'in',
+    'value' => array(),
+    'group' => '0',
+    'exposed' => TRUE,
+    'expose' => array(
+      'use_operator' => FALSE,
+      'operator' => 'uid_op',
+      'identifier' => 'uid',
+      'label' => 'User: Name',
+      'remember' => FALSE,
+      'single' => TRUE,
+      'optional' => TRUE,
+      'reduce' => FALSE,
+    ),
+    'id' => 'uid',
+    'table' => 'users',
+    'field' => 'uid',
+  ),
+));
+$handler->override_option('access', array(
+  'type' => 'perm',
+  'perm' => 'access content',
+));
+$handler->override_option('cache', array(
+  'type' => 'none',
+));
+$handler->override_option('title', 'Your Upcoming Events');
+$handler->override_option('header', '<?
+global $user;
+profile_load_profile($user); 
+$today=date("F j, Y");
+print "Upcoming events for <strong>{$user->profile_first_name} {$user->profile_last_name}</strong> ({$user->mail}) as of {$today}.";
+?>
+');
+$handler->override_option('header_format', '3');
+$handler->override_option('header_empty', 1);
+$handler->override_option('empty', 'No upcoming registrations/waitlist events found.');
+$handler->override_option('empty_format', '2');
+$handler->override_option('items_per_page', 50);
+$handler->override_option('use_pager', '1');
+$handler->override_option('style_plugin', 'table');
+$handler->override_option('style_options', array(
+  'grouping' => '',
+  'override' => 1,
+  'sticky' => 0,
+  'order' => 'asc',
+  'summary' => '',
+  'columns' => array(
+    'field_date_start_value' => 'field_date_start_value',
+    'title' => 'title',
+    'attended' => 'attended',
+  ),
+  'info' => array(
+    'field_date_start_value' => array(
+      'sortable' => 1,
+      'separator' => '',
+    ),
+    'title' => array(
+      'sortable' => 1,
+      'separator' => '',
+    ),
+    'attended' => array(
+      'sortable' => 0,
+      'separator' => '',
+    ),
+  ),
+  'default' => 'field_date_start_value',
+));
+$handler = $view->new_display('page', 'Page', 'page_1');
+$handler->override_option('path', 'account/events/upcoming');
+$handler->override_option('menu', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'primary-links',
+));
+$handler->override_option('tab_options', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'navigation',
+));
+$handler = $view->new_display('page', 'CRLT client signup view', 'page_2');
+$handler->override_option('fields', array(
+  'field_event_dates_value' => array(
+    'label' => 'Dates',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 0,
+    'label_type' => 'widget',
+    'format' => 'short_date_numeric',
+    'multiple' => array(
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_to' => '',
+      'group' => 1,
+    ),
+    'repeat' => array(
+      'show_repeat_rule' => '',
+    ),
+    'fromto' => array(
+      'fromto' => 'both',
+    ),
+    'exclude' => 0,
+    'id' => 'field_event_dates_value',
+    'table' => 'node_data_field_event_dates',
+    'field' => 'field_event_dates_value',
+    'override' => array(
+      'button' => 'Use default',
+    ),
+    'relationship' => 'none',
+  ),
+  'title' => array(
+    'label' => 'Title',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 1,
+    'exclude' => 0,
+    'id' => 'title',
+    'table' => 'node',
+    'field' => 'title',
+    'relationship' => 'none',
+  ),
+  'status' => array(
+    'label' => 'Registered?',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'exclude' => 0,
+    'id' => 'status',
+    'table' => 'signup_log',
+    'field' => 'status',
+    'relationship' => 'none',
+  ),
+  'attended' => array(
+    'id' => 'attended',
+    'table' => 'signup_log',
+    'field' => 'attended',
+  ),
+  'status_1' => array(
+    'label' => 'Registration Status',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'exclude' => 0,
+    'id' => 'status_1',
+    'table' => 'signup_log',
+    'field' => 'status',
+    'override' => array(
+      'button' => 'Use default',
+    ),
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('access', array(
+  'type' => 'role',
+  'role' => array(
+    7 => 7,
+  ),
+));
+$handler->override_option('title', 'Client Events');
+$handler->override_option('header', '');
+$handler->override_option('path', 'crlt_consult/user_signups');
+$handler->override_option('menu', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'primary-links',
+));
+$handler->override_option('tab_options', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'navigation',
+));
+

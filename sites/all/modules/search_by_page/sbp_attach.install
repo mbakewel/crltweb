@@ -1,0 +1,76 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for sbp_attach module
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function sbp_attach_schema() {
+  $schema['sbpa_files'] = array(
+    'description' => t('Contains files to be indexed by sbp_attach module'),
+    'fields' => array(
+      'fid' => array(
+        'description' => t('Primary key'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'source' => array(
+        'description' => t('Did this come from Upload, CCK, etc.'),
+        'type' => 'varchar',
+        'length' => 30,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {node}.nid associated with the uploaded file.',
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {node}.vid associated with the uploaded file.',
+      ),
+      // Do not use 'type' as a db field - reserved word!
+      'typename' => array(
+        'description' => t('If CCK, name of content type'),
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'fieldname' => array(
+        'description' => t('If CCK, name of field'),
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('fid'),
+    'indexes' => array(
+      'src' => array('source'),
+      'nid' => array('nid'),
+      'vid' => array('vid'),
+    ),
+  );
+
+  return $schema;
+}
+
+
+/**
+ * Implementation of hook_install().
+ */
+function sbp_attach_install() {
+  drupal_install_schema('sbp_attach');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function sbp_attach_uninstall() {
+  drupal_uninstall_schema('sbp_attach');
+}

@@ -1,0 +1,11 @@
+name = Fieldset helper
+description = Saves the state of Drupal's collapsible fieldsets.
+core = 6.x
+package = User interface
+
+; Information added by drupal.org packaging script on 2012-06-28
+version = "6.x-2.1"
+core = "6.x"
+project = "fieldset_helper"
+datestamp = "1340882500"
+

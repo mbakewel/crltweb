@@ -1,0 +1,446 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_consultation_menu() {
+  $items = array();
+  $items['crlt/consultation/client/save'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'crlt_consultation_client_save',
+    'access arguments' => array('create consultation content')
+  );
+  $items['crlt/consultation/client/search'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'crlt_consultation_client_search',
+    'access arguments' => array('create consultation content')
+  );
+  $items['crlt/consultation/test'] = array(
+    'type' => NORMAL_MENU_ITEM,
+    'page callback' => 'crlt_consultation_test_page',
+    'access callback' => TRUE
+  );
+  $items['crlt/consultation/batch'] = array(
+    'title' => 'Consultation Service Provider Data Migration Batch',
+    'page callback' => 'crlt_consultation_batch',
+    'access arguments' => array('create consultation content')
+  );
+  $items['crlt/consultation/client/bulk-add'] = array(
+    'type' => NORMAL_MENU_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_consultation_client_bulk_add'),
+    'access arguments' => array('create consultation content')
+  );
+  return $items;
+}
+
+function crlt_consultation_test_page() {
+  $results = views_get_view_result('consultation_clients', 'default', null, "Tyler", null, null, null, null, null);
+  return '<pre>' . print_r($results, true) . '</pre>';
+}
+
+/**
+ * Ajax page callback handler for saving client user profiles on the consultation node form.
+ */
+function crlt_consultation_client_save() {
+  $valid = TRUE;
+  $data = array('message' => '', 'result' => null);
+  $client = crlt_consultation_client_build_from_input();
+  if ($client['name'] != '') {
+    // If the client doesn't exist create a new one. Either way, update the field values
+    // on the user account.
+    $sql = " SELECT uid FROM {users} WHERE name = '%s' ";
+    $uid = db_result(db_query($sql, $client['name']));
+    if (!$uid) {
+      $fields = array(
+        'name' => $client['name'],
+        'mail' => $client['mail'],
+        'pass' => user_password(8),
+        'status' => 1
+      );
+      $account = user_save('', $fields);
+      if ($account) {
+        $uid = $account->uid;
+        $data['message'] .= 'Saved new user!';
+      }
+      else {
+        $data['message'] = 'Failed to save new user!';
+        $valid = FALSE;
+      }
+    }
+    if ($valid) {
+      $account = user_load($uid);
+      $fields = array();
+      if ($client['name']) { $fields['name'] = $client['name']; }
+      if ($client['mail']) { $fields['mail'] = $client['mail']; }
+      if ($client['first_name']) { $fields['profile_first_name'] = $client['first_name']; }
+      if ($client['last_name']) { $fields['profile_last_name'] = $client['last_name']; }
+      if ($client['department']) { $fields['department'] = $client['department']; }
+      if ($client['school']) { $fields['unit'] = $client['school']; }
+      if ($client['institution']) { $fields['institution'] = $client['institution']; }
+      if ($client['rank']) { $fields['Rank'] = $client['rank']; }
+      if (!empty($fields)) {
+        if (crlt_user_save($account, $fields)) {
+          $data['message'] .= 'Updated user profile!';
+        }
+        else {
+          $data['message'] .= 'Failed to update user profile! (' . $account->name . ')!';
+        }
+      }
+    }
+  }
+  else {
+    $data['message'] = 'You must provide a uniqname to save a client!';
+  }
+  drupal_json($data);
+  exit();
+}
+
+/**
+ * Ajax page callback handler for searching for existing clients on the consultation node form.
+ */
+function crlt_consultation_client_search() {
+  $data = array('message' => '', 'results' => null);
+  $client = crlt_consultation_client_build_from_input();
+  $data['client'] = $client;
+  $name = $mail = $first_name = $last_name = $department = $institution = $rank = $school = 'all';
+  if ($client['name']) { $name = $client['name']; }
+  if ($client['mail']) { $mail = $client['mail']; }
+  if ($client['first_name']) { $first_name = $client['first_name']; }
+  if ($client['last_name']) { $last_name = $client['last_name']; }
+  if ($client['department']) { $department = $client['department']; }
+  if ($client['school']) { $school = $client['school']; }
+  if ($client['institution']) { $institution = $client['institution']; }
+  if ($client['rank']) { $rank = $client['rank']; }
+  $results = views_get_view_result('consultation_clients', 'default', $name, $mail, $first_name, $last_name, $department, $school, $institution, $rank);
+  $data['results'] = $results;
+  $result_count = sizeof($results);
+  $data['message'] = "Found $result_count " . format_plural($result_count, "client", "clients") . "! " .
+                     "Click on the client's name to load them into the client manager.";
+  drupal_json($data);
+  exit();
+}
+
+/**
+ * Builds an associative array of a client from the post data and returns it.
+ */
+function crlt_consultation_client_build_from_input() {
+  $client = array();
+  $client['name'] = $_POST['name'];
+  $client['mail'] = $_POST['mail'];
+  $client['first_name'] = $_POST['first_name'];
+  $client['last_name'] = $_POST['last_name'];
+  $client['department'] = $_POST['department'];
+  $client['school'] = $_POST['school'];
+  $client['institution'] = $_POST['institution'];
+  $client['rank'] = $_POST['rank'];
+  return $client;
+}
+
+/**
+ * Given a D6 user profile field id, this will return an associative
+ * array of possible values in alphabetical order. If there are no values
+ * it returns false.
+ */
+function crlt_consultation_client_profile_field_values($fid, $options = array()) {
+  $values = array();
+  // If any options were provided, prepend them to the values array.
+  if (!empty($options)) {
+    foreach($options as $key => $value) {
+      $values[$key] = $value;
+    }
+  }
+  $sql = " select options from profile_fields where fid = %d ";
+  $results = db_query($sql, $fid);
+  while ($data = db_fetch_object($results)) {
+    // The options are in plain text and separated by a line, break them apart
+    // and add them one at a time to the values array.
+    foreach(preg_split("/((\r?\n)|(\r\n?))/", $data->options) as $line){
+      $values[$line] = $line;
+    }
+  }
+  if (empty($values)) { return false; }
+  return $values;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function crlt_consultation_form_alter(&$form, &$form_state, $form_id) {
+
+  global $user;
+
+  /*if (in_array('admin', $user->roles)) {
+    drupal_set_message($form['#id']);
+    drupal_set_message($form_id);
+    //drupal_set_message('<pre>' . print_r($form, true) . '</pre>');
+  }*/
+
+  // Make modifications to the Consultation node form.
+  if ($form_id == 'consultation_node_form') {
+
+    // We only want to show widgets to admins and 'CRLT Staff'.
+    $show_widgets = false;
+    if (in_array('admin', $user->roles) || in_array('CRLT Staff', $user->roles)) {
+      $show_widgets = true;
+    }
+
+    // Add a widget to quickly  reference 'service provider' users on its field.
+    $sql = " SELECT u.uid, u.name, pv.value AS profile_first_name FROM {users} u INNER JOIN {users_roles} ur ON u.uid = ur.uid LEFT OUTER JOIN {profile_values} pv ON u.uid = pv.uid WHERE ur.rid = 13 AND pv.fid = 5 ORDER BY profile_first_name ASC ";
+    $results = db_query($sql);
+    $users = array();
+    while ($account = db_fetch_object($results)) {
+      $users[$account->name] = $account->profile_first_name . ' (' . $account->name . ')';
+    }
+    if (!empty($users)) {
+      $button = '<input type="button" onclick="field_consultation_serv_provider_add_user();" value="Quick Add Service Provider" />';
+      $form['field_consultation_serv_provider_users'] = array(
+        '#weight' => -99,
+        '#prefix' => '<div>' . $html . '</div>',
+        '#type' => 'select',
+        '#options' => $users,
+        '#description' => $button,
+        '#access' => $show_widgets
+      );
+    }
+
+    // Add a widget to quickly reference clients and be able to update them, or
+    // add a new client. We pass in an empty option for each so the select list
+    // is optional.
+    //drupal_set_message('<pre>' . print_r($form['field_client'], true) . '</pre>');
+    $departments = crlt_consultation_client_profile_field_values(4, array('' => ''));
+    $schools = crlt_consultation_client_profile_field_values(3, array('' => ''));
+    $ranks = crlt_consultation_client_profile_field_values(2, array('' => ''));
+    $widget =
+      theme('textfield', array(
+        '#title' => 'Uniqname',
+        '#id' => 'crlt_consultation_client_name'
+      )) .
+      theme('textfield', array(
+        '#title' => 'E-mail',
+        '#id' => 'crlt_consultation_client_mail'
+      )) .
+      theme('textfield', array(
+        '#title' => 'First Name',
+        '#id' => 'crlt_consultation_client_first_name'
+      )) .
+      theme('textfield', array(
+        '#title' => 'Last Name',
+        '#id' => 'crlt_consultation_client_last_name'
+      )) .
+      theme('textfield', array(
+        '#title' => 'Institution',
+        '#id' => 'crlt_consultation_client_institution'
+      )) .
+      theme('select', array(
+        '#title' => 'School or College',
+        '#id' => 'crlt_consultation_client_school',
+        '#options' => $schools
+      )) .
+      theme('select', array(
+        '#title' => 'Department',
+        '#id' => 'crlt_consultation_client_department',
+        '#options' => $departments
+      )) .
+      theme('select', array(
+        '#title' => 'Role',
+        '#id' => 'crlt_consultation_client_rank',
+        '#options' => $ranks
+      )) .
+      '<input type="button" value="Search for Clients" onclick="javascript:crlt_consulation_client_search();" />' .
+      '<input type="button" value="Save Client Account" onclick="javascript:crlt_consulation_client_save();" />' .
+      '<input type="button" value="Add Client to Consultation" onclick="javascript:crlt_consulation_client_add();" />' .
+      '<input type="button" value="Clear Input" onclick="javascript:crlt_consulation_client_clear();" />';
+// Build the bulk add client link.
+    if ($form['nid']['#value']) {
+      $bulk_client_link = '+ ' . l(
+        'Bulk Add Clients',
+        'crlt/consultation/client/bulk-add',
+        array(
+          'attributes' => array('_target' => 'blank'),
+          'query' => array(
+            'crlt_consultation_nid' => $form['nid']['#value'],
+            'destination' => "node/{$form['nid']['#value']}/edit"
+          )
+        )
+      );
+    }
+    else {
+      $bulk_client_link = '<strong><em>Bulk Add Clients</em></strong>: Create and save the consultation first.';
+    }
+    // Build the client manager field set from the widget.
+    $form['field_client_crlt_widget'] = array(
+      '#weight' => $form['field_client']['#weight']-1,
+      '#title' => 'Client Manager',
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      '#access' => $show_widgets,
+      '#description' => '<p>Use this to quickly find/add/edit clients for this consultation.</p>' .
+                        $widget . "<p>$bulk_client_link</p>" .
+                        '<div id="crlt_consultation_client_output"></div>' .
+                        '<ul style="display: none;" id="crlt_consultation_client_list" ></ul>'
+    );
+  }
+}
+
+/**
+ * Consultation bulk add client form.
+ */
+function crlt_consultation_client_bulk_add($form, &$form_state) {
+  $nid = $_GET['crlt_consultation_nid'];
+  $node = node_load($nid);
+  $form = array();
+  $form['#prefix'] = '<h2>' . $node->title . '</h2>';
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $nid,
+    '#required' => true
+  );
+  $form['clients'] = array(
+    '#title' => 'Consultation Clients',
+    '#type' => 'textarea',
+    '#description' => 'Enter a list of uniqnames or e-mail addresses, separated by comma or enter one per line.',
+    '#required' => true
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Add Clients to Consultation',
+  );
+  return $form;
+}
+
+/**
+ * Consultation bulk add client form.
+ */
+function crlt_consultation_client_bulk_add_submit($form, &$form_state) {
+  //drupal_set_message('<pre>' . print_r($form_state['values'], true) . '</pre>');
+  $consultation_clients = array();
+  // Replace all the new lines with commas, then split by comma.
+  $input = $form_state['values']['clients'];
+  $input = preg_replace("/((\r?\n)|(\r\n?))/", ',', $input);
+  $clients = split(',', $input);
+  foreach ($clients as $client) {
+    $client = trim($client);
+    if ($client == '') { continue; }
+    $uid = false;
+    $mail = '';
+    $valid_email_address = valid_email_address($client);
+    // umich.edu e-mail address.
+    if ($valid_email_address && strpos($client, 'umich.edu') !== false) {
+      $mail = $client;
+      $client = substr($mail, 0, strpos($mail, '@'));
+      $sql = "SELECT uid FROM {users} WHERE name = '%s'";
+      $uid = db_result(db_query($sql, $client));
+    }
+    // External e-mail address.
+    else if ($valid_email_address) {
+      $sql = "SELECT uid FROM {users} WHERE mail = '%s'";
+      $uid = db_result(db_query($sql, $client));
+      $mail = $client;
+    }
+    // Uniqname.
+    else {
+      $sql = "SELECT uid FROM {users} WHERE name = '%s'";
+      $uid = db_result(db_query($sql, $client));
+      $mail = $client . "@umich.edu";
+    }
+if ($uid) {
+      $consultation_clients[] = $uid;
+    }
+    else {
+      $fields = array(
+        'name' => $client,
+        'mail' => $mail,
+        'pass' => user_password(8),
+        'status' => 1
+      );
+      $account = user_save('', $fields);
+      if ($account) {
+        $consultation_clients[] = $account->uid;
+        $account_link = l($account->name . " ($mail)", "user/$account->uid");
+        drupal_set_message("Created new client ($account_link).");
+      }
+      else {
+        drupal_set_message("Failed to create client! ($client - $mail)", 'error');
+      }
+    }
+  }
+  if (!empty($consultation_clients)) {
+    $node = node_load($form_state['values']['nid']);
+    if ($node) {
+      //drupal_set_message('<pre>' . print_r($node->field_client, true) . '</pre>');
+      foreach($node->field_client as $delta => $account) {
+        $name = db_result(db_query("SELECT name FROM {users} WHERE uid = %d ", $account['uid']));
+        $account_link = l($name, "user/{$account['uid']}");
+        if(($key = array_search($account['uid'], $consultation_clients)) !== false) {
+          unset($consultation_clients[$key]);
+          drupal_set_message("Client ($account_link) is already on the consultation, skipping them.");
+        }
+      }
+      foreach($consultation_clients as $uid) {
+        $node->field_client[] = array('uid' => $uid);
+        $name = db_result(db_query("SELECT name FROM {users} WHERE uid = %d ", $uid));
+        $account_link = l($name, "user/$uid");
+        drupal_set_message("Added client ($account_link) to the consultation.");
+      }
+      if (!empty($consultation_clients)) {
+        node_save($node);
+        drupal_set_message('Updated the consultation!');
+      }
+    }
+    else {
+      drupal_set_message("Failed to load consultation node! ({$form_state['values']['nid']})", 'error');
+    }
+  }
+  drupal_goto('node/' . $form_state['values']['nid']);
+}
+
+function crlt_consultation_batch() {
+  return "batch processed already!";
+  $sql = " SELECT nid FROM {node} WHERE type = 'consultation' ORDER BY nid ASC ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_Fetch_object($results)) {
+    $operations[] = array('crlt_consultation_batch_service_provider_process', array($data->nid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_consultation_batch_service_provider_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_consultation_batch_service_provider_process($nid, &$context) {
+  $node = node_load($nid, NULL, TRUE);
+  //$context['results'][] = $node->nid . ' : ' . check_plain($node->title);
+  $context['message'] = t('Processing @title', array('@title' => $node->title));
+  // Change the field_service_provider text value to a user reference value on the
+  // field_consultation_serv_provider field.
+  if (isset($node->field_service_provider)) {
+    foreach($node->field_service_provider as $delta => $service_provider) {
+      $uid = $service_provider['value'];
+      if ($uid == 'gtc') {
+        $uid = 60890; // gtcs-2013
+      }
+      $node->field_consultation_serv_provider[$delta] = array('uid' => $uid);
+    }
+  }
+  node_save($node);
+}
+
+function crlt_consultation_batch_service_provider_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/consultation/batch'));
+}
+

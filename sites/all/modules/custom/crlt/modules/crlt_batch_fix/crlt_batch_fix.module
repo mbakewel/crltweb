@@ -1,0 +1,105 @@
+<?php
+
+function crlt_batch_fix_menu() {
+  $items = array();
+  /*
+    A bunch of users (through a botched SQL Query) lost their profile values
+    for their certificate particpation statuses.
+  */
+  $items['crlt_batch_fix/user-cert-profile-values-batch'] = array(
+    'title' => 'Crlt_batch_fix Batch',
+    'page callback' => 'crlt_batch_fix_user_cert_profile_values_batch',
+    'access arguments' => array('administer users')
+  );
+  $items['crlt_batch_fix/migrate-certificate-particpation-migrate-to-new-field'] = array(
+    'title' => 'Crlt_batch_fix Batch',
+    'page callback' => 'crlt_batch_certificate_last_participation_migrate_to_new_field',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+function crlt_batch_fix_user_cert_profile_values_batch() {
+  //return 'BATCH ALREADY RAN!';
+  $operations = array();
+  //$uids = array(57756,57741,57637,57505,57456,30101,56986,56835,30266,56692,56621,56028,55809,55391,54900,54554,54486,54472,54439,32064,54155,54125,53595,53575,53524,53292,53104,52684,52458,52414,51997,51996,51796,51619,51613,51545,51447,51380,51319,51031,50793,50396,50355,50116,50113,49856,49700,49662,49642,49497,49480,48958,48792,48417,48358,48164,47819,47411,47183,46954,46642,46544,46480,30138,45862,45837,44562,44468,44294,44036,43755,43446,43402,43361,43321,43295,42955,42784,42297,42035,41914,41856,41430,41096,40816,39824,39549,39365,39026,38220,38214,37723,37599,31599,36951,36571,36455,36410,36364,36221,36171,36044,35590,31173,35228,34658,34633,34528,34221,34074,33676,33620,33156,31558);
+  $uids = array(38220,34074,36171,36044,56621,33156,36364,54486,41914,54125,46954,57456,57637,42297,54439,51796,56835,51031,49662,36455,50793,38214,57741,36221,49642,50113,54155,44468,54472,46544,41096,30101,34221,49856,47411,41430,55391,43295,40816,48164,45862,47819,46642,49497,39824,46480,50396,61942,51997,47183,36571,41856,42784,35590,53104,45837,56692,42955,44562,31599,44294,61957,31558,52414,54900,53524,48958,35228,42035,50116,30266,30138,52684,51613,49700,57756,39026,52458,37599,56028,51319,61937,51545,49480,43402,57505,39549,31173,51996,43321,33620,33676,34528,34633,34658,36410,36951,37723,39365,43361,43446,43755,44036,48358,48417,48792,50355,51380,51447,51619,53292,53575,53595,32064,54554,55809,56986);
+  foreach ($uids as $uid) {
+    $operations[] = array('crlt_batch_fix_user_cert_profile_values_batch_process', array($uid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_batch_fix_user_cert_profile_values_batch_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_batch_fix_user_cert_profile_values_batch_process($uid, &$context) {
+  // Set last participation time.
+  crlt_badges_update_user_account_last_participation_time($uid);
+  // To fix this user's certificate participation statuses (badges), we'll just
+  // fake a call to the crlt_badge_nodeapi().
+  /*$node = new stdClass();
+  $node->type = 'certificate';
+  $node->uid = $uid;
+  crlt_badges_nodeapi($node, 'update');*/
+  //drupal_set_message(l($uid, "user/$uid"));
+  $context['message'] = t('Processing @uid', array('@uid' => $uid));
+}
+
+function crlt_batch_fix_user_cert_profile_values_batch_finished($success, $results, $operations) {
+  if ($success) { $message = count($results) . ' processed.'; }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt_batch_fix/user-cert-profile-values-batch'));
+}
+
+function crlt_batch_certificate_last_participation_migrate_to_new_field () {
+  //return 'BATCH ALREADY RAN!';
+  $operations = array();
+  $sql = " SELECT uid FROM {users} WHERE uid <> 0 ORDER BY uid ASC ";
+  $results = db_query($sql);
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_batch_certificate_last_participation_migrate_to_new_field_process', array($data->uid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_batch_certificate_last_participation_migrate_to_new_field_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_batch_certificate_last_participation_migrate_to_new_field_process($uid, &$context) {
+  $account = user_load($uid);
+  if ($account && !empty($account->profile_certificate_last_participation)) {
+    $month = $account->profile_certificate_last_participation['month'];
+    $day = $account->profile_certificate_last_participation['day'];
+    $year = $account->profile_certificate_last_participation['year'];
+    crlt_user_save(
+      $account, array(
+        'profile_certificate_last_participation_time' => strtotime("$year-$month-$day")
+      )
+    );
+  }
+  $context['message'] = t('Processing @uid', array('@uid' => $uid));
+}
+
+function crlt_batch_certificate_last_participation_migrate_to_new_field_finished($success, $results, $operations) {
+  if ($success) { $message = count($results) . ' processed.'; }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt_batch_fix/migrate-certificate-particpation-migrate-to-new-field'));
+}
+

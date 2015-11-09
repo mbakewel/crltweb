@@ -1,0 +1,117 @@
+<?php
+
+/**
+ * Determine if $account qualifies as a crlt_grant_admin
+ *
+ * @param unknown $account StdObject Drupal User object. Defaults to current user.
+ * @return boolen TRUE if $account is a CRLT Grant Admin account
+ */
+function crlt_grant_admin( $account = NULL ) {
+  $is_crlt_grant_admin = FALSE;
+  // Default account argument to current user
+  if ( !$account ) {
+    global $user;
+    $account = $user;
+  }
+  // Determine if $account qualifies as a crlt_grant_admin
+  if (
+    crlt_is_admin( $account )
+    || in_array( 'service provider', $account->roles )
+  ) {
+    $is_crlt_grant_admin = TRUE;
+  }
+  return $is_crlt_grant_admin;
+}
+
+/**
+ *
+ */
+function crlt_grant_apply_button( $node ) {
+/*  return '+ ' . l(
+ *   'Submit an Application for the ' . $node->title,
+ *   'node/add/grant-application',
+ *   array( 'query' => 'field_grant=' . $node->nid )
+ * );
+*/
+return '';
+}
+
+/**
+ * Implements hook_perm().
+ */
+function crlt_grant_perm() {
+  return array( 'administer crlt grants' );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_grant_menu() {
+  $items = array();
+  $items['admin/crlt/grants/%/report'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'CRLT Grant Report',
+    'page callback' => 'crlt_grant_report_page',
+    'page arguments' => array( 3 ),
+    'access arguments' => array( 'administer crlt grants' ),
+    'file' => 'crlt_grant.pages.inc'
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_block().
+ */
+function crlt_grant_block( $op = 'list', $delta = 0, $edit = array() ) {
+  if ( $op == 'list' ) {
+    $blocks = array();
+    $blocks[0] = array(
+      'info' => t( 'CRLT Grant Admin Navigation' )
+    );
+    return $blocks;
+  }
+  else if ( $op == 'view' ) {
+      global $user;
+      $block = array();
+      switch ( $delta ) {
+      case 0:
+        $items = array();
+        if ( arg( 2 ) == 'grants' ) {
+          if ( arg( 3 ) ) {
+            $items[] = l( 'Back to all Grants', 'admin/crlt/grants' );
+          }
+          $items[] = l( 'Go to all Grant Applications', 'admin/crlt/grant-applications' );
+          $items[] = l( 'View my Grant Application Reviews', "user/{$user->uid}/grant-application-reviews" );
+        }
+        else if ( arg( 2 ) == 'grant-applications' ) {
+            $items[] = l( 'Back to all Grants', 'admin/crlt/grants' );
+            $items[] = l( 'View my Grant Application Reviews', "user/{$user->uid}/grant-application-reviews" );
+          }
+        else if ( arg( 0 ) == 'user' ) {
+            $items[] = l( 'Back to all Grants', 'admin/crlt/grants' );
+            $items[] = l( 'Back to all Grant Applications', 'admin/crlt/grant-applications' );
+          }
+        $block = array(
+          'content' => theme( 'item_list', $items )
+        );
+        break;
+      }
+      return $block;
+    }
+}
+
+/**
+ * VIEWS HELPERS
+ */
+
+/**
+ * Given a grant node id, this will return all the applications for it.
+ * Optionally pass in an academic year to limit the applications to that year
+ * only.
+ */
+function crlt_grant_applications( $nid, $year = NULL ) {
+  if ( $year ) {
+    return views_get_view_result( 'crlt_grant_applications', NULL, $nid, $year );
+  }
+  return views_get_view_result( 'crlt_grant_applications', NULL, $nid );
+}

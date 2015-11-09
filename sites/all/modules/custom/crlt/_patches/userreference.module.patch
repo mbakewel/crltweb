@@ -1,0 +1,46 @@
+diff --git a/sites/all/modules/cck/modules/userreference/userreference.module b/sites/all/modules/cck/modules/userreference/userreference.module
+index 1e8e34b..5a706da 100644
+--- a/sites/all/modules/cck/modules/userreference/userreference.module
++++ b/sites/all/modules/cck/modules/userreference/userreference.module
+@@ -813,11 +813,32 @@ function _userreference_potential_references_standard($field, $string = '', $mat
+ 
+   $users = array();
+   $where_clause = $where ? 'WHERE ('. implode(') AND (', $where) .')' : '';
+-  $result = db_query('SELECT u.name, u.uid FROM {users} u '. implode(' ', $join) ." $where_clause ORDER BY u.name ASC", $args);
++  //$result = db_query('SELECT u.name, u.uid FROM {users} u '. implode(' ', $join) ." $where_clause ORDER BY u.name ASC", $args);
++  // CRLT HACK - show user profile field values in auto complete results
++  $result = db_query('SELECT u.name, u.uid,
++    pv2.value as pv2_value,
++    pv3.value as pv3_value,
++    pv4.value as pv4_value,
++    pv5.value as pv5_value,
++    pv6.value as pv6_value,
++    pv7.value as pv7_value
++    FROM {users} u '. implode(' ', $join) ."
++    LEFT JOIN {profile_values} pv2 ON u.uid = pv2.uid AND pv2.fid = 2 
++    LEFT JOIN {profile_values} pv3 ON u.uid = pv3.uid AND pv3.fid = 3 
++    LEFT JOIN {profile_values} pv4 ON u.uid = pv4.uid AND pv4.fid = 4 
++    LEFT JOIN {profile_values} pv5 ON u.uid = pv5.uid AND pv5.fid = 5 
++    LEFT JOIN {profile_values} pv6 ON u.uid = pv6.uid AND pv6.fid = 6
++    LEFT JOIN {profile_values} pv7 ON u.uid = pv7.uid AND pv7.fid = 7 
++    $where_clause ORDER BY u.name ASC", $args);
+   while ($user = db_fetch_object($result)) {
++    $rendered = check_plain($user->name);
++    for ($i = 2; $i <= 7; $i++ ) {
++      $rendered .= ' | ' . $user->{'pv' . $i . '_value'};
++    }
+     $users[$user->uid] = array(
+       'title' => $user->name,
+-      'rendered' => check_plain($user->name),
++      'rendered' => check_plain($rendered),
++      /*'rendered' => check_plain($user->name),*/
+     );
+   }
+   return $users;
+@@ -930,4 +951,4 @@ function theme_userreference_buttons($element) {
+ 
+ function theme_userreference_autocomplete($element) {
+   return $element['#children'];
+-}
+\ No newline at end of file
++}

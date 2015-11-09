@@ -1,0 +1,13 @@
+<?php
+// $Id: meg.module
+
+ /* changes the text on the save button on grant application node add from Save to Submit*/
+function meg_form_alter(&$form, &$form_state, $form_id) {
+switch ($form_id) {
+	case 'grant_application_node_form':
+		$form['buttons']['submit']['#value'] = t('Submit');
+		unset($form['buttons']['preview']);
+		break;
+}
+}
+

@@ -1,0 +1,7 @@
+name = CRLT Grant Application Migration
+description = Migrate CRLT SiteMaker grant application records to Drupal. Disable after completing the migration.
+core = 6.x
+package = CRLT Grants
+dependencies[] = crlt_grant
+dependencies[] = crlt_grant_application
+

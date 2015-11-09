@@ -1,0 +1,15 @@
+; $Id: $
+name = Webform Digest
+description = Sends  to email digest of webform submissions.
+core = 6.x
+package = Webform
+dependencies[] = webform
+dependencies[] = webform_bonus
+dependencies[] = mimemail
+
+; Information added by drupal.org packaging script on 2012-01-25
+version = "6.x-3.x-dev"
+core = "6.x"
+project = "webform_bonus"
+datestamp = "1327497236"
+

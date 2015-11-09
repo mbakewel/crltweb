@@ -1,0 +1,21 @@
+<?php
+// $Id: hs_user_terms.install,v 1.1 2010/03/17 20:42:58 cpliakas Exp $
+
+/**
+ * @file
+ * Install file for the Hierarchical Select User Terms module.
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function hs_user_terms_enable() {
+  variable_set('user_terms_override_selector', TRUE);
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function hs_user_terms_disable() {
+  variable_set('user_terms_override_selector', FALSE);
+}

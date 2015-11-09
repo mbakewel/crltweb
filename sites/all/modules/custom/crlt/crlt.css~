@@ -1,0 +1,87 @@
+/**
+ * Consultations
+ */
+#crlt_consultation_client_name-wrapper,
+#crlt_consultation_client_mail-wrapper,
+#crlt_consultation_client_first_name-wrapper,
+#crlt_consultation_client_last_name-wrapper { 
+  float: left;
+  margin-right: 1em;
+}
+#crlt_consultation_client_institution-wrapper {
+  clear: both;
+}
+#crlt_consultation_client_name,
+#crlt_consultation_client_mail,
+#crlt_consultation_client_first_name,
+#crlt_consultation_client_last_name { 
+  width: 128px;
+}
+#crlt_consultation_client_institution {
+  width: 256px;
+}
+
+#crlt_consultation_client_list li a {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+#edit-field-consultation-components-value-Annual-Report-wrapper,
+#edit-field-consultation-components-value-Assessment-wrapper,
+#edit-field-consultation-components-value-Grants-wrapper,
+#edit-field-consultation-components-value-IT-wrapper,
+#edit-field-consultation-components-value-Multicultural-wrapper {
+  float: left;
+  margin-right: 1em;
+}
+#edit-field-num-contacts-0-value-wrapper {
+  clear: both;
+}
+fieldset.group-gtc-details {
+  clear: both;
+}
+#field-consultation-serv-provider-items .text,
+#field-client-items .text {
+  width: 100%;
+}
+
+/**
+ * Events
+ */
+img.crlt_event_flag {
+  margin-top: 4px;
+  margin-right: 4px;
+}
+div.view-crlt-events-calendar td.views-field-title {
+  padding-left: 4px;
+}
+.view-crlt-events-calendar .views-field-title a {
+  color: black;
+  text-decoration: underline;
+}
+.view-crlt-events-calendar tr.crlt_odd_week,
+.view-crlt-events-calendar tr.crlt_odd_week td {
+  background-color: #eee;
+}
+.view-crlt-events-calendar tr.crlt_even_week, 
+.view-crlt-events-calendar tr.crlt_even_week td {
+  background-color: #ddd;
+}
+
+/**
+ * Certificates
+ */
+#content-messages-inner .messages li {
+  font-size: 115%;
+}
+
+/**
+ * Badges
+ */
+.view-gtcplus-profile-gallery .views-field-body .crlt_badge_image_wrapper img {
+  margin: 0px 4px 4px 0px;
+}
+#view-id-crlt_user_certificates-page_1 .view-content {
+  margin-bottom: 2em;
+}
+

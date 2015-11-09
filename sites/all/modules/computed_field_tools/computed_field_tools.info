@@ -1,0 +1,13 @@
+name = Computed Field Tools
+description = "Re-compute values in computed fields"
+package = "CCK"
+core = 6.x
+dependencies[] = content
+dependencies[] = computed_field
+
+; Information added by drupal.org packaging script on 2013-03-13
+version = "6.x-1.1"
+core = "6.x"
+project = "computed_field_tools"
+datestamp = "1363206016"
+

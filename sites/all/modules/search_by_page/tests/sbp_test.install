@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Install file for Search by Page testing module
+ * @ingroup search_by_page
+ */
+
+/**
+ * Implementation of hook_install().
+ *
+ * Code taken form the Node Access Example module on drupal.org.
+ */
+function sbp_test_install() {
+  drupal_install_schema('sbp_test');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ *
+ * Code taken form the Node Access Example module on drupal.org.
+ */
+function sbp_test_uninstall() {
+  drupal_uninstall_schema('sbp_test');
+}
+
+/**
+ * Implementation of hook_schema().
+ *
+ * Code taken form the Node Access Example module on drupal.org.
+ */
+function sbp_test_schema() {
+  $schema['sbp_test_access'] = array(
+    'fields' => array(
+      'nid'     => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0),
+      'private' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}

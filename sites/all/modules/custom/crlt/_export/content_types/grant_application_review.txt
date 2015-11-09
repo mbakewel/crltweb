@@ -1,0 +1,260 @@
+$content['type']  = array (
+  'name' => 'Grant Application Review',
+  'type' => 'grant_application_review',
+  'description' => 'Used to represent a CLRT internal review of a Grand Application.',
+  'title_label' => 'Title',
+  'body_label' => 'Comment',
+  'min_word_count' => '0',
+  'help' => '<p>Instructions go here...</p>
+',
+  'node_options' => 
+  array (
+    'status' => true,
+    'promote' => false,
+    'sticky' => false,
+    'revision' => false,
+  ),
+  'old_type' => 'grant_application_review',
+  'orig_type' => '',
+  'module' => 'node',
+  'custom' => '1',
+  'modified' => '1',
+  'locked' => '0',
+  'signup_node_default_state' => 'disabled',
+  'signup_date_field' => 0,
+  'comment' => '0',
+  'comment_default_mode' => '4',
+  'comment_default_order' => '1',
+  'comment_default_per_page' => '50',
+  'comment_controls' => '3',
+  'comment_anonymous' => 0,
+  'comment_subject_field' => '1',
+  'comment_preview' => '1',
+  'comment_form_location' => '0',
+  'more_node_buttons_cancel' => '0',
+  'more_node_buttons_cancel_referer_redirect' => 0,
+  'more_node_buttons_sac' => '0',
+  'more_node_buttons_sacn' => '0',
+  'more_node_buttons_tabcn' => 0,
+  'print_display' => 0,
+  'print_display_comment' => 0,
+  'print_display_urllist' => 0,
+  'print_mail_display' => 0,
+  'print_mail_display_comment' => 0,
+  'print_mail_display_urllist' => 0,
+  'print_pdf_display' => 0,
+  'print_pdf_display_comment' => 0,
+  'print_pdf_display_urllist' => 0,
+  'scheduler_publish_enable' => 0,
+  'scheduler_publish_touch' => 0,
+  'scheduler_publish_required' => 0,
+  'scheduler_publish_revision' => 0,
+  'scheduler_unpublish_enable' => 0,
+  'scheduler_unpublish_required' => 0,
+  'scheduler_unpublish_revision' => 0,
+);
+$content['fields']  = array (
+  0 => 
+  array (
+    'label' => 'Grant Application',
+    'field_name' => 'field_grant_application',
+    'type' => 'nodereference',
+    'widget_type' => 'nodereference_autocomplete',
+    'change' => 'Change basic information',
+    'weight' => '-4',
+    'autocomplete_match' => 'starts_with',
+    'size' => '32',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'nid' => NULL,
+        '_error_element' => 'default_value_widget][field_grant_application][0][nid][nid',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'referenceable_types' => 
+    array (
+      'grant_application' => 'grant_application',
+      'crltplayers' => 0,
+      'certificate' => 0,
+      'consultation' => 0,
+      'events' => 0,
+      'gtc_intro_workshop_response' => 0,
+      'grant' => 0,
+      'grant_application_review' => 0,
+      'mentorship_faculty_profile' => 0,
+      'guest_post' => 0,
+      'page' => 0,
+      'person' => 0,
+      'poll' => 0,
+      'story' => 0,
+      'teaching_award' => 0,
+      'tech_tools' => 0,
+      'webform' => 0,
+    ),
+    'advanced_view' => '--',
+    'advanced_view_args' => '',
+    'op' => 'Save field settings',
+    'module' => 'nodereference',
+    'widget_module' => 'nodereference',
+    'columns' => 
+    array (
+      'nid' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'index' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  1 => 
+  array (
+    'label' => 'Rating',
+    'field_name' => 'field_grant_application_rating',
+    'type' => 'text',
+    'widget_type' => 'optionwidgets_buttons',
+    'change' => 'Change basic information',
+    'weight' => '-3',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_rating' => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '1|Low
+2|Medium
+3|High',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+);
+$content['extra']  = array (
+  'title' => '-5',
+  'body_field' => '-2',
+  'revision_information' => '1',
+  'author' => '2',
+  'options' => '3',
+  'comment_settings' => '7',
+  'menu' => '-1',
+  'path' => '5',
+  'print' => '6',
+  'workflow' => '0',
+  'xmlsitemap' => '4',
+);

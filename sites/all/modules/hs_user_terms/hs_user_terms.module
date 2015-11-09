@@ -1,0 +1,93 @@
+<?php
+// $Id: hs_user_terms.module,v 1.2 2010/06/01 16:00:57 cpliakas Exp $
+
+/**
+ * @file
+ * Implementation of the Hierarchical Select API for the User Terms module.
+ */
+
+/**
+ * Implementation of hook_user().
+ */
+function hs_user_terms_user($op, &$edit, &$account, $category = NULL) {
+  // Should user terms be displayed in the interface?
+  $display = TRUE;
+  if (module_exists('profile')) {
+    $profile_page = variable_get('user_terms_profile_path', 'account');
+    if ($category && ($category != $profile_page)) {
+      $display = FALSE;
+    }
+  }
+
+  // If we are adding the HS element, get the form.
+  if ($display) {
+    switch ($op) {
+      // The user account registration form is about to be displayed.  The module
+      // should present the form elements it wishes to inject into the form.
+      case 'register':
+        return hs_user_terms_form_profile($edit, $account, $category, TRUE);
+
+      // The user account edit form is about to be displayed.  The module should
+      // present the form elements it wishes to inject into the form.
+      case 'form':
+        return hs_user_terms_form_profile($edit, $account, $category);
+    }
+  }
+}
+
+/**
+ * Edit a user's profile or register a new account.  A majority of this code is
+ * inherited from the User Term module's user_terms_form_profile() function.
+ *
+ * @see user_terms_form_profile()
+ */
+function hs_user_terms_form_profile($edit, $account, $category, $register = FALSE) {
+  $form = array();
+
+  // Gets vocabularies enabled for users, bails if no vocabs are selected.
+  $vids = variable_get('user_terms_vocabs', '');
+  if (empty($vids)) {
+    return $form;
+  }
+
+  // Initializes the User Terms form.
+  $form['user_terms'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User terms'),
+  );
+
+  foreach ($vids as $vid)  {
+    // Loads the vocabulary, continues to the next vocabulary in the array if
+    // there was an error loading the current one.
+    if (!$vocabulary = taxonomy_vocabulary_load($vid)) {
+      continue;
+    }
+
+    // Gets the user's currently applied tags.
+    $default_terms = array();
+    if (isset($account->user_terms)) {
+      foreach ($account->user_terms as $term) {
+        // Free tagging has no default terms and also no vid after preview.
+        if (isset($term['vid']) && $term['vid'] == $vid) {
+          $default_terms[$term['tid']] = $term;
+        }
+      }
+    }
+
+    // Display the Taxonomy form as a Hierarchical Select element.
+    $form_function = variable_get("taxonomy_hierarchical_select_$vocabulary->vid", 0) ? 'hs_taxonomy_form' : 'taxonomy_form';
+    $form['user_terms']['user_terms_'. $vid] = $form_function($vocabulary->vid, array_keys($default_terms), $vocabulary->help);
+    $form['user_terms']['user_terms_'. $vid]['#weight'] = $vocabulary->weight;
+    $form['user_terms']['user_terms_'. $vid]['#required'] = $vocabulary->required;
+  }
+
+  // Set a hidden value so that we can check in user_terms_save_profile()
+  // that we've actually come from the account edit form.
+  // http://drupal.org/node/814242
+  $form['user_terms_vids'] = array(
+    '#type' => 'value',
+    '#value' => $vids,
+  );
+
+  return $form;
+}

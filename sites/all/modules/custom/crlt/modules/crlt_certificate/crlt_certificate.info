@@ -1,0 +1,5 @@
+name = CRLT Certificate
+description = The CRLT Certificate module.
+package = Other
+core = 6.x
+

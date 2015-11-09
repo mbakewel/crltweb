@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function webform_digest_menu() {
+  $items = array();
+  $items['node/%webform_menu/webform/digest'] = array(
+    'title' => 'Digest',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('webform_digest_form', 1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'file' => 'webform_digest.inc',
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+
+/**
+ * Implementation of hook_webform_exporters().
+ * Add digest exporter that will override other exportets.
+ */
+function webform_digest_webform_exporters($return = false) {
+  return array(
+    'webform_exporter_webform_digest' => array(
+      'title' => 'Digest Exporter (do not use it)',
+      'handler' => 'webform_exporter_webform_digest', 
+    )
+  );
+}
+
+
+/**
+ * Implementation of hook_cron().
+ * Send digest here.
+ */
+function webform_digest_cron() {
+  module_load_include('inc', 'webform_digest', 'webform_digest');
+
+  $res = db_query("SELECT * FROM {webform_digest} WHERE enabled=1");
+  while ($record = db_fetch_array($res)) {
+    $to_send = false;
+    if ($record['period'] == 'day') {
+      if (time() - $record['sent'] > 60 * 60 && date('H') == $record['hourly_granularity']) {
+        $to_send = true;
+      }
+    } elseif ($record['period'] == 'week') {
+      if (time() - $record['sent'] > 24 * 60 * 60 && date('w') == $record['daily_granularity'] && date('H') >= $record['hourly_granularity']) {
+        $to_send = true;
+      }
+    } elseif ($record['period'] == 'month') {
+      if (time() - $record['sent'] > 24 * 60 * 60 && date('w') == $record['daily_granularity'] && date('H') >= $record['hourly_granularity']) {
+        $to_send = true;
+      }
+    }
+    if ($to_send) {
+      _webform_digest_send_digest($record['nid']);
+      $record['sent'] = time();
+      drupal_write_record('webform_digest', $record, 'nid');
+    }
+  }
+}
+
+
+/**
+ * Implementation of hook_nodeapi().
+ * Prevent sending of submitted webform data if digest is enabled.
+ */
+function webform_digest_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  $webform_node_types = variable_get('webform_node_types', array());
+  if (in_array($node->type, $webform_node_types) && $op == 'load') {
+    // Don't override webform emails addition, when sending digest or editing cron.
+    if (arg(2) == 'webform' && arg(3) == 'emails') return;
+    if ($GLOBALS['webform_digest_send'] == true) return;
+
+    // Get record from database.
+    $digest_conf = db_fetch_array(db_query('SELECT * FROM {webform_digest} WHERE nid=%d', array($node->nid)));
+    $digest_conf['digest_settings'] = unserialize($digest_conf['digest_settings']);
+
+    // Leave only specific emails if digest is enabled.
+    // This emails will get submissions as they come in.
+    if ($digest_conf ['enabled']) {
+      module_load_include('module', 'webform', 'webform');
+      $additions = webform_node_load($node);
+      $additions['webform']['emails_all'] = $additions['webform']['emails'];
+      $additions['webform']['emails'] = array_intersect_key( $additions['webform']['emails'], $digest_conf['digest_settings']['recieve_submissions']);
+      return $additions;
+    }
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function webform_digest_form_alter(&$form, &$form_state, $form_id) {
+  // Unset digest exporter, which is used for technical purpose.
+  if ($form_id == 'webform_results_download_form' || $form_id == 'webform_digest_form') {
+    if ($form_state['values']['format'] != 'webform_exporter_webform_digest') {
+      unset($form['format']['#options']['webform_exporter_webform_digest']);
+    }
+  }
+}

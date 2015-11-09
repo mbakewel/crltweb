@@ -1,0 +1,5 @@
+name = CRLT Site Maker Migration
+description = The CRLT Site Maker Migration Module.
+core = 6.x
+package = Other
+

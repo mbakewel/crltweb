@@ -1,0 +1,4356 @@
+$content['type']  = array (
+  'name' => 'Grant Application',
+  'type' => 'grant_application',
+  'description' => '',
+  'title_label' => 'Title',
+  'body_label' => 'Body',
+  'min_word_count' => '0',
+  'help' => '',
+  'node_options' => 
+  array (
+    'status' => true,
+    'revision' => true,
+    'promote' => false,
+    'sticky' => false,
+  ),
+  'old_type' => 'grant_application',
+  'orig_type' => '',
+  'module' => 'node',
+  'custom' => '1',
+  'modified' => '1',
+  'locked' => '0',
+  'signup_node_default_state' => 'disabled',
+  'signup_date_field' => 0,
+  'comment' => '0',
+  'comment_default_mode' => '4',
+  'comment_default_order' => '1',
+  'comment_default_per_page' => '50',
+  'comment_controls' => '3',
+  'comment_anonymous' => 0,
+  'comment_subject_field' => '1',
+  'comment_preview' => '1',
+  'comment_form_location' => '0',
+  'more_node_buttons_cancel' => '0',
+  'more_node_buttons_cancel_referer_redirect' => 0,
+  'more_node_buttons_sac' => '0',
+  'more_node_buttons_sacn' => '0',
+  'more_node_buttons_tabcn' => 0,
+  'print_display' => 1,
+  'print_display_comment' => 0,
+  'print_display_urllist' => 1,
+  'print_mail_display' => 1,
+  'print_mail_display_comment' => 0,
+  'print_mail_display_urllist' => 1,
+  'print_pdf_display' => 1,
+  'print_pdf_display_comment' => 0,
+  'print_pdf_display_urllist' => 1,
+  'scheduler_publish_enable' => 0,
+  'scheduler_publish_touch' => 0,
+  'scheduler_publish_required' => 0,
+  'scheduler_publish_revision' => 0,
+  'scheduler_unpublish_enable' => 0,
+  'scheduler_unpublish_required' => 0,
+  'scheduler_unpublish_revision' => 0,
+);
+$content['groups']  = array (
+  0 => 
+  array (
+    'label' => 'CRLT Staff Fields',
+    'group_type' => 'standard',
+    'settings' => 
+    array (
+      'form' => 
+      array (
+        'style' => 'fieldset_collapsed',
+        'description' => '<p>These fields are used by CRLT staff to internally process this grant application.</p>
+',
+      ),
+      'display' => 
+      array (
+        'description' => '',
+        'teaser' => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        5 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'label' => 'above',
+      ),
+    ),
+    'weight' => '9',
+    'group_name' => 'group_grant_application_crlt',
+  ),
+  1 => 
+  array (
+    'label' => 'Reporting Fields',
+    'group_type' => 'standard',
+    'settings' => 
+    array (
+      'form' => 
+      array (
+        'style' => 'fieldset_collapsed',
+        'description' => '<p>These fields will be used after the grant application is processed as a way for applicants to report their progress.</p>
+',
+      ),
+      'display' => 
+      array (
+        'description' => '',
+        'teaser' => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'full' => 
+        array (
+          'format' => 'hidden',
+          'exclude' => 0,
+        ),
+        4 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        2 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        3 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        5 => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'token' => 
+        array (
+          'format' => 'fieldset',
+          'exclude' => 0,
+        ),
+        'label' => 'hidden',
+      ),
+    ),
+    'weight' => '12',
+    'group_name' => 'group_grant_application_reports',
+  ),
+);
+$content['fields']  = array (
+  0 => 
+  array (
+    'label' => 'Grant',
+    'field_name' => 'field_grant',
+    'type' => 'nodereference',
+    'widget_type' => 'nodereference_select',
+    'change' => 'Change basic information',
+    'weight' => '-4',
+    'autocomplete_match' => 'contains',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => NULL,
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'referenceable_types' => 
+    array (
+      'grant' => 'grant',
+      'crltplayers' => 0,
+      'certificate' => 0,
+      'consultation' => 0,
+      'events' => 0,
+      'gtc_intro_workshop_response' => 0,
+      'grant_application' => 0,
+      'mentorship_faculty_profile' => 0,
+      'guest_post' => 0,
+      'page' => 0,
+      'person' => 0,
+      'poll' => 0,
+      'story' => 0,
+      'teaching_award' => 0,
+      'tech_tools' => 0,
+      'webform' => 0,
+      'grant_application_review' => false,
+    ),
+    'advanced_view' => '--',
+    'advanced_view_args' => '',
+    'op' => 'Save field settings',
+    'module' => 'nodereference',
+    'widget_module' => 'nodereference',
+    'columns' => 
+    array (
+      'nid' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'index' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '-4',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  1 => 
+  array (
+    'label' => 'Academic Year',
+    'field_name' => 'field_grant_application_year',
+    'type' => 'number_integer',
+    'widget_type' => 'optionwidgets_select',
+    'change' => 'Change basic information',
+    'weight' => '-3',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_year' => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'min' => '2008',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '2015|2015 - 2016 (June 1, 2015 through May 30, 2016)
+2014|2014 - 2015 (June 1, 2014 through May 30, 2015)
+2013|2013 - 2014 (June 1, 2013 through May 30, 2014)
+2012|2012 - 2013 (June 1, 2012 through May 30, 2013)
+2011|2011 - 2012 (June 1, 2011 through May 30, 2012)
+2010|2010 - 2011 (June 1, 2010 through May 30, 2011)
+2009|2009 - 2010 (June 1, 2009 through May 30, 2010)
+2008|2008 - 2009 (June 1, 2008 through May 30, 2009)',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '-3',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  2 => 
+  array (
+    'label' => 'Project Dates',
+    'field_name' => 'field_grant_application_dates',
+    'type' => 'date',
+    'widget_type' => 'date_select',
+    'change' => 'Change basic information',
+    'weight' => '-2',
+    'default_value' => 'now',
+    'default_value2' => 'now',
+    'default_value_code' => '',
+    'default_value_code2' => '',
+    'input_format' => 'Y-m-d H:i:s',
+    'input_format_custom' => '',
+    'year_range' => '-10:+3',
+    'increment' => '1',
+    'advanced' => 
+    array (
+      'label_position' => 'above',
+      'text_parts' => 
+      array (
+        'year' => 0,
+        'month' => 0,
+        'day' => 0,
+        'hour' => 0,
+        'minute' => 0,
+        'second' => 0,
+      ),
+    ),
+    'label_position' => 'above',
+    'text_parts' => 
+    array (
+    ),
+    'description' => 'Select your project start and end dates.',
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'repeat' => 0,
+    'todate' => 'required',
+    'granularity' => 
+    array (
+      'year' => 'year',
+      'month' => 'month',
+      'day' => 'day',
+    ),
+    'default_format' => 'medium',
+    'tz_handling' => 'none',
+    'timezone_db' => 'America/Detroit',
+    'op' => 'Save field settings',
+    'module' => 'date',
+    'widget_module' => 'date',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+      'value2' => 
+      array (
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => false,
+        'sortable' => true,
+        'views' => false,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '-2',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  3 => 
+  array (
+    'label' => 'Requested Budget',
+    'field_name' => 'field_grant_app_budget',
+    'type' => 'number_decimal',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '-1',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_budget' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_budget][0][value',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0.00',
+    'max' => '',
+    'precision' => '10',
+    'scale' => '2',
+    'decimal' => '.',
+    'prefix' => '$',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'numeric',
+        'precision' => '10',
+        'scale' => '2',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '-1',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'us_2',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'us_2',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  4 => 
+  array (
+    'label' => 'Applicants',
+    'field_name' => 'field_grant_application_users',
+    'type' => 'userreference',
+    'widget_type' => 'userreference_autocomplete',
+    'change' => 'Change basic information',
+    'weight' => 0,
+    'autocomplete_match' => 'starts_with',
+    'size' => '64',
+    'reverse_link' => 0,
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'uid' => NULL,
+        '_error_element' => 'default_value_widget][field_grant_application_users][0][uid][uid',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_users' => 
+      array (
+        0 => 
+        array (
+          'uid' => 
+          array (
+            'uid' => '',
+            '_error_element' => 'default_value_widget][field_grant_application_users][0][uid][uid',
+          ),
+          '_error_element' => 'default_value_widget][field_grant_application_users][0][uid][uid',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 1,
+    'multiple' => '1',
+    'referenceable_roles' => 
+    array (
+      2 => 0,
+      3 => 0,
+      9 => 0,
+      7 => 0,
+      4 => 0,
+      6 => 0,
+      15 => 0,
+      8 => 0,
+      12 => 0,
+      13 => 0,
+      5 => 0,
+      11 => 0,
+      10 => 0,
+    ),
+    'referenceable_status' => '',
+    'advanced_view' => '--',
+    'advanced_view_args' => '',
+    'op' => 'Save field settings',
+    'module' => 'userreference',
+    'widget_module' => 'userreference',
+    'columns' => 
+    array (
+      'uid' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'index' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => 0,
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  5 => 
+  array (
+    'label' => 'Graduate Students / Post Doctorates',
+    'field_name' => 'field_grant_application_grad_stu',
+    'type' => 'userreference',
+    'widget_type' => 'userreference_autocomplete',
+    'change' => 'Change basic information',
+    'weight' => '1',
+    'autocomplete_match' => 'starts_with',
+    'size' => '64',
+    'reverse_link' => 0,
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'uid' => NULL,
+        '_error_element' => 'default_value_widget][field_grant_application_grad_stu][0][uid][uid',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_grad_stu' => 
+      array (
+        0 => 
+        array (
+          'uid' => 
+          array (
+            'uid' => '',
+            '_error_element' => 'default_value_widget][field_grant_application_grad_stu][0][uid][uid',
+          ),
+          '_error_element' => 'default_value_widget][field_grant_application_grad_stu][0][uid][uid',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '1',
+    'referenceable_roles' => 
+    array (
+      2 => 0,
+      3 => 0,
+      9 => 0,
+      7 => 0,
+      4 => 0,
+      6 => 0,
+      15 => 0,
+      8 => 0,
+      12 => 0,
+      13 => 0,
+      5 => 0,
+      11 => 0,
+      10 => 0,
+    ),
+    'referenceable_status' => '',
+    'advanced_view' => '--',
+    'advanced_view_args' => '',
+    'op' => 'Save field settings',
+    'module' => 'userreference',
+    'widget_module' => 'userreference',
+    'columns' => 
+    array (
+      'uid' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'index' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '1',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  6 => 
+  array (
+    'label' => 'Overview of the Project',
+    'field_name' => 'field_grant_application_overview',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '2',
+    'rows' => '5',
+    'size' => 60,
+    'description' => 'This project overview (250 word maximum) will be included in a set of summary documents provided to the review committee and will be made public on the CRLT website if your grant is funded.',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+        '_error_element' => 'default_value_widget][field_grant_application_overview][0][value',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_overview' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_application_overview][0][value',
+          'format' => '2',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'text_processing' => '1',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+      'format' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'views' => false,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '2',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  7 => 
+  array (
+    'label' => 'Number of Grad Students Affected Annually',
+    'field_name' => 'field_grant_application_graduate',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '3',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_graduate' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_application_graduate][0][value',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => 'Students Affected Annually',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '3',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  8 => 
+  array (
+    'label' => 'Number of Undergraduate Students Affected Annually',
+    'field_name' => 'field_grant_application_under',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '4',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_under' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_application_under][0][value',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => 'Graduate Students Affected Annually',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '4',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  9 => 
+  array (
+    'label' => 'Assets',
+    'field_name' => 'field_grant_application_assets',
+    'type' => 'filefield',
+    'widget_type' => 'filefield_widget',
+    'change' => 'Change basic information',
+    'weight' => '5',
+    'file_extensions' => 'pdf',
+    'progress_indicator' => 'bar',
+    'file_path' => 'grant-applications',
+    'max_filesize_per_file' => '',
+    'max_filesize_per_node' => '',
+    'description' => 'Upload a single PDF including coversheet, + proposal, budget, and any letters of support.',
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'list_field' => '0',
+    'list_default' => 1,
+    'description_field' => '0',
+    'op' => 'Save field settings',
+    'module' => 'filefield',
+    'widget_module' => 'filefield',
+    'columns' => 
+    array (
+      'fid' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'views' => true,
+      ),
+      'list' => 
+      array (
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => false,
+        'views' => true,
+      ),
+      'data' => 
+      array (
+        'type' => 'text',
+        'serialize' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '5',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  10 => 
+  array (
+    'label' => 'Additional Supporters',
+    'field_name' => 'field_grant_application_support',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '6',
+    'rows' => '5',
+    'size' => 60,
+    'description' => 'List additional supporters (e.g., individuals writing letters of support, additional department chairs)',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_support' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_application_support][0][value',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '6',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  11 => 
+  array (
+    'label' => 'Report Due Date',
+    'field_name' => 'field_grant_application_report',
+    'type' => 'date',
+    'widget_type' => 'date_select',
+    'change' => 'Change basic information',
+    'weight' => '7',
+    'default_value' => 'blank',
+    'default_value2' => 'blank',
+    'default_value_code' => '',
+    'default_value_code2' => '',
+    'input_format' => 'Y-m-d H:i:s',
+    'input_format_custom' => '',
+    'year_range' => '-10:+3',
+    'increment' => '1',
+    'advanced' => 
+    array (
+      'label_position' => 'above',
+      'text_parts' => 
+      array (
+        'year' => 0,
+        'month' => 0,
+        'day' => 0,
+        'hour' => 0,
+        'minute' => 0,
+        'second' => 0,
+      ),
+    ),
+    'label_position' => 'above',
+    'text_parts' => 
+    array (
+    ),
+    'description' => '',
+    'group' => false,
+    'required' => 0,
+    'multiple' => '0',
+    'repeat' => 0,
+    'todate' => '',
+    'granularity' => 
+    array (
+      'year' => 'year',
+      'month' => 'month',
+      'day' => 'day',
+    ),
+    'default_format' => 'medium',
+    'tz_handling' => 'none',
+    'timezone_db' => 'America/Detroit',
+    'op' => 'Save field settings',
+    'module' => 'date',
+    'widget_module' => 'date',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '7',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  12 => 
+  array (
+    'label' => 'Chair Uniqname',
+    'field_name' => 'field_grant_application_chair',
+    'type' => 'userreference',
+    'widget_type' => 'userreference_autocomplete',
+    'change' => 'Change basic information',
+    'weight' => '8',
+    'autocomplete_match' => 'contains',
+    'size' => '64',
+    'reverse_link' => 0,
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'uid' => NULL,
+        '_error_element' => 'default_value_widget][field_grant_application_chair][0][uid][uid',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_application_chair' => 
+      array (
+        0 => 
+        array (
+          'uid' => 
+          array (
+            'uid' => '',
+            '_error_element' => 'default_value_widget][field_grant_application_chair][0][uid][uid',
+          ),
+          '_error_element' => 'default_value_widget][field_grant_application_chair][0][uid][uid',
+        ),
+      ),
+    ),
+    'group' => false,
+    'required' => 1,
+    'multiple' => '0',
+    'referenceable_roles' => 
+    array (
+      2 => 0,
+      3 => 0,
+      9 => 0,
+      7 => 0,
+      4 => 0,
+      6 => 0,
+      15 => 0,
+      8 => 0,
+      12 => 0,
+      13 => 0,
+      5 => 0,
+      11 => 0,
+      10 => 0,
+    ),
+    'referenceable_status' => '',
+    'advanced_view' => '--',
+    'advanced_view_args' => '',
+    'op' => 'Save field settings',
+    'module' => 'userreference',
+    'widget_module' => 'userreference',
+    'columns' => 
+    array (
+      'uid' => 
+      array (
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => false,
+        'index' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '8',
+      'parent' => '',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  13 => 
+  array (
+    'label' => 'Review Count',
+    'field_name' => 'field_grant_app_review_count',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '47',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'default_value_widget' => NULL,
+    'display_settings' => 
+    array (
+      'weight' => '47',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  14 => 
+  array (
+    'label' => 'Reviewers',
+    'field_name' => 'field_grant_app_reviewers',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '48',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '1',
+    'code' => '<p>$node_field[0][&#39;value&#39;] = &quot;&quot;;</p>
+',
+    'display_format' => '<p>$display = $node_field_item[&#39;value&#39;];</p>
+',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '128',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '48',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'markup',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'markup',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  15 => 
+  array (
+    'label' => 'Reviews Rated High',
+    'field_name' => 'field_grant_app_rated_high',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '49',
+    'description' => 'Computed field, displaying the number of Grant Application Review nodes referencing this Grant Application node with a Rating of High.',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '65535',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '49',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  16 => 
+  array (
+    'label' => 'Reviews Rated Medium',
+    'field_name' => 'field_grant_app_rated_med',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '50',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '50',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  17 => 
+  array (
+    'label' => 'Reviews Rated Low',
+    'field_name' => 'field_grant_app_rated_low',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '51',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '51',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  18 => 
+  array (
+    'label' => 'Reviews Rated Average',
+    'field_name' => 'field_grant_app_rated_avg',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '52',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'numeric',
+    'data_length' => '',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'numeric',
+        'precision' => '10',
+        'scale' => '2',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '52',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'plain',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  19 => 
+  array (
+    'label' => 'Chair Evaluation Form',
+    'field_name' => 'field_grant_app_chair_eval_form',
+    'type' => 'filefield',
+    'widget_type' => 'filefield_widget',
+    'change' => 'Change basic information',
+    'weight' => '53',
+    'file_extensions' => 'pdf',
+    'progress_indicator' => 'bar',
+    'file_path' => '',
+    'max_filesize_per_file' => '',
+    'max_filesize_per_node' => '',
+    'description' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '1',
+    'list_field' => '0',
+    'list_default' => 1,
+    'description_field' => '0',
+    'op' => 'Save field settings',
+    'module' => 'filefield',
+    'widget_module' => 'filefield',
+    'columns' => 
+    array (
+      'fid' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'views' => true,
+      ),
+      'list' => 
+      array (
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => false,
+        'views' => true,
+      ),
+      'data' => 
+      array (
+        'type' => 'text',
+        'serialize' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '53',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  20 => 
+  array (
+    'label' => 'Chair Comments',
+    'field_name' => 'field_grant_app_chair_comments',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '54',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_chair_comments' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_chair_comments][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '54',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  21 => 
+  array (
+    'label' => 'CRLT Staff Rating',
+    'field_name' => 'field_grant_app_staff_rating',
+    'type' => 'text',
+    'widget_type' => 'text_textfield',
+    'change' => 'Change basic information',
+    'weight' => '55',
+    'rows' => 5,
+    'size' => '24',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_staff_rating' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_staff_rating][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '55',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  22 => 
+  array (
+    'label' => 'Dean Comments',
+    'field_name' => 'field_grant_app_dean_comments',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '56',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_dean_comments' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_dean_comments][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '56',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  23 => 
+  array (
+    'label' => 'Dean Ranking within School',
+    'field_name' => 'field_grant_app_dean_rank_school',
+    'type' => 'text',
+    'widget_type' => 'text_textfield',
+    'change' => 'Change basic information',
+    'weight' => '57',
+    'rows' => 5,
+    'size' => '60',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_dean_rank_school' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_dean_rank_school][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '57',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  24 => 
+  array (
+    'label' => 'Dean Rating',
+    'field_name' => 'field_grant_app_dean_rating',
+    'type' => 'text',
+    'widget_type' => 'optionwidgets_select',
+    'change' => 'Change basic information',
+    'weight' => '58',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_dean_rating' => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '1|Low
+2|Medium
+3|High',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '58',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  25 => 
+  array (
+    'label' => 'Recommended for Funding',
+    'field_name' => 'field_grant_app_recommended_fund',
+    'type' => 'number_integer',
+    'widget_type' => 'optionwidgets_buttons',
+    'change' => 'Change basic information',
+    'weight' => '59',
+    'description' => 'Check this box if this grant application is recommended for funding.',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_recommended_fund' => 
+      array (
+        'value' => '',
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0',
+    'max' => '1',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '0|No
+1|Yes',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '59',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  26 => 
+  array (
+    'label' => 'Links to Review Files',
+    'field_name' => 'field_grant_app_links_to_review',
+    'type' => 'link',
+    'widget_type' => 'link',
+    'change' => 'Change basic information',
+    'weight' => '60',
+    'description' => '',
+    'default_value' => 
+    array (
+      0 => 
+      array (
+        'url' => '',
+      ),
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_links_to_review' => 
+      array (
+        0 => 
+        array (
+          'url' => '',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '1',
+    'validate_url' => 1,
+    'url' => 0,
+    'title' => 'none',
+    'title_value' => '',
+    'title_value_visibility' => 0,
+    'enable_tokens' => 0,
+    'display' => 
+    array (
+      'url_cutoff' => '80',
+    ),
+    'attributes' => 
+    array (
+      'target' => 'default',
+      'rel' => '',
+      'class' => '',
+      'title' => '',
+    ),
+    'op' => 'Save field settings',
+    'module' => 'link',
+    'widget_module' => 'link',
+    'columns' => 
+    array (
+      'url' => 
+      array (
+        'type' => 'varchar',
+        'length' => 2048,
+        'not null' => false,
+        'sortable' => true,
+      ),
+      'title' => 
+      array (
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => false,
+        'sortable' => true,
+      ),
+      'attributes' => 
+      array (
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => false,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '60',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  27 => 
+  array (
+    'label' => 'Suppress Report Requests',
+    'field_name' => 'field_grant_app_suppress_request',
+    'type' => 'number_integer',
+    'widget_type' => 'optionwidgets_onoff',
+    'change' => 'Change basic information',
+    'weight' => '61',
+    'description' => 'Check this box to suppress automated notification messages from being sent out to applicants and processors.',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_suppress_request' => 
+      array (
+        'value' => false,
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0',
+    'max' => '1',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '0|No
+1|Yes',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'optionwidgets',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '61',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  28 => 
+  array (
+    'label' => 'Number of Reminders Sent',
+    'field_name' => 'field_grant_app_reminders_sent',
+    'type' => 'number_integer',
+    'widget_type' => 'number',
+    'change' => 'Change basic information',
+    'weight' => '62',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_reminders_sent' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_reminders_sent][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'min' => '0',
+    'max' => '',
+    'prefix' => '',
+    'suffix' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'number',
+    'widget_module' => 'number',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'not null' => false,
+        'sortable' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '62',
+      'parent' => 'group_grant_application_crlt',
+      'label' => 
+      array (
+        'format' => 'above',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  29 => 
+  array (
+    'label' => 'Review 1 Name',
+    'field_name' => 'field_grant_app_review_1_name',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '63',
+    'description' => 'Reviewer name of the first Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  30 => 
+  array (
+    'label' => 'Review 1 Rating',
+    'field_name' => 'field_grant_app_review_1_rating',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '64',
+    'description' => 'The Rating of the first Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'tiny',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  31 => 
+  array (
+    'label' => 'Review 1 Comment',
+    'field_name' => 'field_grant_app_review_1_comment',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '65',
+    'description' => 'Comment of the first Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  32 => 
+  array (
+    'label' => 'Review 2 Name',
+    'field_name' => 'field_grant_app_review_2_name',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '66',
+    'description' => 'Reviewer name of the second Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  33 => 
+  array (
+    'label' => 'Review 2 Rating',
+    'field_name' => 'field_grant_app_review_2_rating',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '67',
+    'description' => 'Rating of the second Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'tiny',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  34 => 
+  array (
+    'label' => 'Review 2 Comment',
+    'field_name' => 'field_grant_app_review_2_comment',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '68',
+    'description' => 'Comment of the second Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  35 => 
+  array (
+    'label' => 'Review 3 Name',
+    'field_name' => 'field_grant_app_review_3_name',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '69',
+    'description' => 'Reviewer name of the third Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  36 => 
+  array (
+    'label' => 'Review 3 Rating',
+    'field_name' => 'field_grant_app_review_3_rating',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '70',
+    'description' => 'Rating of the third Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'int',
+    'data_length' => '',
+    'data_size' => 'tiny',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  37 => 
+  array (
+    'label' => 'Review 3 Comment',
+    'field_name' => 'field_grant_app_review_3_comment',
+    'type' => 'computed',
+    'widget_type' => 'computed',
+    'change' => 'Change basic information',
+    'weight' => '71',
+    'description' => 'Comment of the third Grant Application Review for this Grant Application',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'code' => '$node_field[0][\'value\'] = "";',
+    'display_format' => '$display = $node_field_item[\'value\'];',
+    'store' => 1,
+    'data_type' => 'varchar',
+    'data_length' => '9999',
+    'data_size' => 'normal',
+    'data_precision' => '10',
+    'data_scale' => '2',
+    'data_default' => '',
+    'data_not_NULL' => 0,
+    'data_sortable' => 1,
+    'op' => 'Save field settings',
+    'module' => 'computed_field',
+    'widget_module' => 'computed_field',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '9999',
+        'not null' => 0,
+        'sortable' => 1,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  38 => 
+  array (
+    'label' => 'SiteMaker ID',
+    'field_name' => 'field_sitemaker_id',
+    'type' => 'text',
+    'widget_type' => 'text_textfield',
+    'change' => 'Change basic information',
+    'weight' => '72',
+    'rows' => 5,
+    'size' => '60',
+    'description' => 'If the Grant Application record migrated from SiteMaker, this is the original SiteMaker ID.  DO NOT enter content in this field manually.',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_sitemaker_id' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_sitemaker_id][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_crlt',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '60',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'varchar',
+        'length' => '60',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'label' => 
+      array (
+        'format' => 'above',
+        'exclude' => 0,
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  39 => 
+  array (
+    'label' => 'Project Objectives',
+    'field_name' => 'field_grant_app_proj_objectives',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '26',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_proj_objectives' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_proj_objectives][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '26',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  40 => 
+  array (
+    'label' => 'Project Achievements',
+    'field_name' => 'field_grant_app_proj_achievement',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '27',
+    'rows' => 5,
+    'size' => '60',
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_proj_achievement' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_proj_achievement][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '27',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  41 => 
+  array (
+    'label' => 'Continuation',
+    'field_name' => 'field_grant_app_continuation',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '28',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_continuation' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_continuation][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '28',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  42 => 
+  array (
+    'label' => 'Dissemination',
+    'field_name' => 'field_grant_app_dissemination',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '29',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_dissemination' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_dissemination][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '29',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  43 => 
+  array (
+    'label' => 'Advice to your Colleagues',
+    'field_name' => 'field_grant_app_colleague_advice',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '30',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_colleague_advice' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_colleague_advice][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '30',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+  44 => 
+  array (
+    'label' => 'Advice to CRLT',
+    'field_name' => 'field_grant_app_crlt_advice',
+    'type' => 'text',
+    'widget_type' => 'text_textarea',
+    'change' => 'Change basic information',
+    'weight' => '31',
+    'rows' => '5',
+    'size' => 60,
+    'description' => '',
+    'default_value' => 
+    array (
+    ),
+    'default_value_php' => '',
+    'default_value_widget' => 
+    array (
+      'field_grant_app_crlt_advice' => 
+      array (
+        0 => 
+        array (
+          'value' => '',
+          '_error_element' => 'default_value_widget][field_grant_app_crlt_advice][0][value',
+        ),
+      ),
+    ),
+    'group' => 'group_grant_application_reports',
+    'required' => 0,
+    'multiple' => '0',
+    'text_processing' => '0',
+    'max_length' => '',
+    'allowed_values' => '',
+    'allowed_values_php' => '',
+    'op' => 'Save field settings',
+    'module' => 'text',
+    'widget_module' => 'text',
+    'columns' => 
+    array (
+      'value' => 
+      array (
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => false,
+        'sortable' => true,
+        'views' => true,
+      ),
+    ),
+    'display_settings' => 
+    array (
+      'weight' => '31',
+      'parent' => 'group_grant_application_reports',
+      'label' => 
+      array (
+        'format' => 'hidden',
+      ),
+      'teaser' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'full' => 
+      array (
+        'format' => 'hidden',
+        'exclude' => 0,
+      ),
+      4 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      2 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      3 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      5 => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+      'token' => 
+      array (
+        'format' => 'default',
+        'exclude' => 0,
+      ),
+    ),
+  ),
+);
+$content['extra']  = array (
+  'title' => '-5',
+  'body_field' => '14',
+  'revision_information' => '16',
+  'author' => '17',
+  'options' => '18',
+  'comment_settings' => '22',
+  'menu' => '13',
+  'path' => '21',
+  'print' => '19',
+  'workflow' => '15',
+  'xmlsitemap' => '20',
+);

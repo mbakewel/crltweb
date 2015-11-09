@@ -1,0 +1,411 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_event_menu() {
+  $items = array();
+  $items['crlt/event/settings'] = array(
+    'type' => NORMAL_MENU_ITEM,
+    'title' => 'CRLT Event Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_event_settings_form'),
+    'access arguments' => array('administer all signups')
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function crlt_event_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($node->type != 'events') { return; } // Only process events.
+  // If an event is deleted, and it is eligible for a certificate, look at all
+  // of the signups for the event, and cancel any user certificate(s) associated
+  // with the signup, including dual certificates.
+  if (
+    $op == 'delete' &&
+    isset($node->field_eligible_for_certificate[0]['value']) &&
+    !empty($node->field_eligible_for_certificate[0]['value'])
+  ) {
+    $messages = array();
+    $type = crlt_event_get_certificate_type_from_eligibility($node);
+    $dual_certificates = crlt_event_eligible_for_dual_certificate($node);
+    $signups = db_query(" SELECT sid, uid FROM {signup_log} WHERE nid = %d ", $node->nid);
+    while ($signup = db_fetch_object($signups)) {
+      $certificate_nid = crlt_event_signup_get_certificate_nid($type, $signup->uid, $signup->sid);
+      if ($certificate_nid) {
+        $certificate = node_load($certificate_nid, null, true);
+        $certificate->workflow_comment = "Event #$node->nid was deleted for signup #$signup->sid";
+        workflow_transition($certificate, 11);
+        $messages[] = array($certificate->workflow_comment . " on user #" . l($signup->uid, "user/$signup->uid") . "'s " . l('certificate', "node/$certificate_nid"));
+        if ($dual_certificates) {
+          $certificate_copy_nid = crlt_event_signup_get_certificate_nid('B2', $signup->uid, $signup->sid);
+          if ($certificate_copy_nid) {
+            $certificate_copy = node_load($certificate_copy_nid, null, true);
+            if ($certificate_copy) {
+              $certificate_copy->workflow_comment = "Event #$node->nid was deleted for signup #$signup->sid";
+              workflow_transition($certificate_copy, 11);
+              $messages[] = array($certificate_copy->workflow_comment . " on user #" . l($signup->uid, "user/$signup->uid") . "'s " . l('certificate', "node/$certificate_copy_nid"));
+            }
+          }
+        }
+      }
+    }
+    crlt_show_messages($messages);
+  }
+}
+
+/**
+ * The CRLT Event Settings Form.
+ */
+function crlt_event_settings_form(&$form_state) {
+  $color_picker_link = l(
+    'HTML Color Values',
+    'http://www.w3schools.com/tags/ref_colorpicker.asp',
+    array('attributes' => array('target' => '_blank'))
+  );
+  $form['#prefix'] = 'Use these text fields to set ' . $color_picker_link . ' for Event series. ' .
+    'Include the \'#\' with the value.';
+  $series_list = crlt_field_allowed_values_list_as_array('field_presented_by');
+  foreach ($series_list as $index => $series) {
+    $key = crlt_event_series_key('series', $index);
+    $form[$key] = array(
+      '#type' => 'textfield',
+      '#size' => 8,
+      '#title' => $series,
+      '#default_value' => variable_get($key, '')
+    );
+  }
+  $form['crlt_flags'] = array(
+    '#value' => 'Set the image icons to use for Event flags here.'
+  );
+  $flags = crlt_field_allowed_values_list_as_array('field_event_flag');
+  $crlt_site_domain = crlt_site_domain();
+  foreach ($flags as $index => $flag) {
+    $key = crlt_event_series_key('flags', $index);
+    $form[$key] = array(
+      '#type' => 'textfield',
+      '#field_prefix' => $crlt_site_domain . '/',
+      '#size' => 48,
+      '#title' => $flag,
+      '#default_value' => variable_get($key, '')
+    );
+  }
+  // Submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Save'
+  );
+  return $form;
+}
+
+/**
+ * The CRLT Event Settings Form's Submit Handler.
+ */
+function crlt_event_settings_form_submit($form, &$form_state) {
+  // Series.
+  $series_list = crlt_field_allowed_values_list_as_array('field_presented_by');
+  foreach ($series_list as $index => $series) {
+    $key = crlt_event_series_key('series', $index);
+    variable_set($key, $form_state['values'][$key]);
+  }
+  // Flags.
+  $flags = crlt_field_allowed_values_list_as_array('field_event_flag');
+  foreach ($flags as $index => $flag) {
+    $key = crlt_event_series_key('flags', $index);
+    variable_set($key, $form_state['values'][$key]);
+  }
+  drupal_set_message('Settings saved!');
+}
+
+/**
+ * Given a type and integer index, this will return the key to use for the form
+ * element's name on the CRLT event settings form.
+ */
+function crlt_event_series_key($type, $index) {
+  $key = '';
+  switch ($type) {
+    case 'series':
+      $key .= 'crlt_event_series';
+      break;
+    case 'flags':
+      $key .= 'crlt_event_flags';
+      break;
+  }
+  $key .= '_' . $index;
+  return $key;
+}
+
+/**
+ * Implements hook_signup_insert().
+ */
+function crlt_event_signup_insert($signup) {
+  crlt_event_signup_synchronization('insert', $signup);
+}
+
+/**
+ * Implements hook_signup_update().
+ */
+function crlt_event_signup_update($signup) {
+  crlt_event_signup_synchronization('update', $signup);
+}
+
+/**
+ * Implements hook_signup_update().
+ */
+function crlt_event_signup_cancel($signup, $node) {
+  crlt_event_signup_synchronization('cancel', $signup);
+}
+
+/**
+ * Handles the synchronization of an event's signup with the attendee's certificates.
+ */
+function crlt_event_signup_synchronization($mode, $signup) {
+  
+  // If the form_data isn't already an array, unserialize it.
+  if  (!is_array($signup->form_data)) {
+    $signup->form_data = unserialize($signup->form_data);
+  }
+  
+  // Build a messages array so we can let admins know what is happening later
+  // on.
+  $messages = array();
+
+  //$messages[] = array('crlt_event_signup_synchronization (' . $mode . ')');
+  //$messages[] = array('<pre>' . print_r($signup, true) . '</pre>');
+  
+  // The status on the event signup has changed...
+  
+  // Determine the attendance for this signup.
+  $attended = $signup->attended;
+  if (!isset($signup->attended) || empty($signup->attended)) {
+    $attended = db_result(db_query("SELECT attended from {signup_log} WHERE sid = %d", $signup->sid));
+  }
+  
+  // If there is no attendance record on this signup, then we don't have any work to do.
+  if (!isset($attended)) {
+    //$messages[] = array('No attendance record, nothing to do...');
+    crlt_show_messages($messages);
+    return;
+  }
+  
+  // There is some kind of attendance record for this event, handle it later on
+  // depending on the attendance value.
+  // 0 = did not attend
+  // 1 = attended
+  // 2 = partially attended
+  
+  // Let's first figure out which certificate(s) (if any) would be earned from
+  // having attended this event.
+
+  // Load the event node for this signup.
+  $event = node_load($signup->nid);
+  if (!$event) {
+    $messages[] = array("Failed to load event node ($signup->nid) for event signup certificate synchronization!", 'error');
+    crlt_show_messages($messages);
+    return;
+  }
+
+  // Load the user account for this signup.
+  $account = user_load($signup->uid);
+  if (!$account) {
+    $messages[] = array("Failed to load user account ($signup->uid) for event signup certificate synchronization!", 'error');
+    crlt_show_messages($messages);
+    return;
+  }
+  
+  // If the Rank on the signup is not grad student, then we won't be creating a
+  // certificate. Note, we can't use the Rank value attached to the user account
+  // because it may not have been updated to the value present on the signup
+  // form yet, therefore it isn't accurate.
+  if ($signup->form_data['Rank'] != 'Graduate Student' && $account->Rank != 'Graduate Student') {
+    $messages[] = array("Skipping certificate generation, " . l($account->name, "user/$account->uid") . " is not a grad student.");
+    crlt_show_messages($messages);
+    return;
+  }
+
+  // If the event node is not marked as eligible for certificate, skip it. If it is eligible, figure out
+  // the certificate type. There is one instance where two certs need to be created, so mark it when it needs to happen.
+  $type = crlt_event_get_certificate_type_from_eligibility($event);
+  $dual_certificates = crlt_event_eligible_for_dual_certificate($event);
+  if (!$type) {
+    crlt_show_messages($messages);
+    return;
+  }
+  
+  // Now that we've figured out which certificate(s) may potentially be earned
+  // here, let's figure out if we're creating a new, or updating an existing,
+  // certificate node. We'll assume we're creating a new one, unless we prove
+  // otherwise.
+  $new = TRUE;
+  $certificate_nid = crlt_event_signup_get_certificate_nid($type, $account->uid, $signup->sid);
+  if ($certificate_nid) { $new = FALSE; }
+  //$messages[] = array('New Node: ' . $new);
+  
+  // If a certificate does not exist for this signup (aka new certificate), and
+  // this signaup is marked as attended, create a new certificate node.
+  if ($new && $attended == 1 && $mode != 'cancel') {
+    $messages[] = array("Creating new certificate $type for " . l($account->name, "user/$account->uid") . ".");
+    // Create a new certificate node.
+    $certificate = new stdClass();
+    $certificate->title = "Certificate - $type";
+    $certificate->type = 'certificate';
+    $certificate->uid = $account->uid;
+    $certificate->body = "<p>{$event->title}</p>";
+    $certificate->field_certificate_type = array(array('value' => $type));
+    $certificate->field_certificate_source = array(array('value' => 'signup'));
+    $certificate->field_certificate_source_id = array(array('value' => $event->nid));
+    $certificate->field_certificate_sponsor_unit = array(array('value' => 'crlt'));
+    $certificate->field_certificate_term = array(array('value' => crlt_certificate_get_term_from_event($event)));
+    $certificate->field_certificate_agreement = array(array('value' => 1));
+    //$messages[] = array('<pre>' . print_r($certificate, true) . '</pre>');
+    node_save($certificate);
+    if ($certificate->nid) {
+      $messages[] = array("Created certificate! " . l('See it', "node/$certificate->nid"));
+      // Reload the newly created certificate node and set its workflow state
+      // to approved.
+      $certificate = node_load($certificate->nid, null, true);
+      $certificate->workflow_comment = "Signup #$signup->sid attended event #$event->nid";
+      workflow_transition($certificate, 10);
+      // If this was a dual certificate, create the other certificate.
+      if ($dual_certificates) {
+        $certificate_copy = $certificate;
+        $certificate_copy->nid = null;
+        $certificate_copy->vid = null;
+        $certificate_copy->workflow_comment = null;
+        $certificate_copy->_workflow = null;
+        $certificate_copy->title = str_replace($type, 'B2', $certificate->title);
+        $certificate_copy->field_certificate_type = array(array('value' => 'B2'));
+        node_save($certificate_copy);
+        if ($certificate_copy->nid) {
+          $messages[] = array("Created dual certificate! " . l('See it', "node/$certificate_copy->nid"));
+          // Reload the newly created dual certificate node and set its workflow state
+          // to approved.
+          $certificate_copy = node_load($certificate_copy->nid, null, true);
+          $certificate_copy->workflow_comment = "Signup #$signup->sid attended event #$event->nid";
+          workflow_transition($certificate_copy, 10);
+        }
+        else {
+          $messages[] = array(
+             "Failed to create dual certificate for $account->name on signup ($signup->sid) for event (" .
+              l($event->title, 'node/' . $event->nid) .
+            ").",
+            'error'
+          );
+        }
+      }
+    }
+    else {
+      $messages[] = array(
+         "Failed to create certificate for $account->name on signup ($signup->sid) for event (" .
+          l($event->title, 'node/' . $event->nid) .
+        ").",
+        'error'
+      );
+    }
+  }
+  else {
+    // The certificate for this signup already exists. Depending on the attendance
+    // value, move the certificate workflow into its appropriate state.
+    $sid = null;
+    if ($attended == 1 && $mode != 'cancel') { $sid = 10; } // Approved
+    else { $sid = 11; } // Denied
+    $certificate = node_load($certificate_nid, null, true);
+    if ($certificate && $sid != $certificate->_workflow) {
+      $messages[] = array("Updating the workflow on " . l($certificate->title, "node/$certificate->nid") . " for " . l($account->name, "user/$account->uid") . ".");
+      $certificate->workflow_comment = "Signup #$signup->sid for event #$event->nid attendance record changed";
+      workflow_transition($certificate, $sid);
+      // If it was a dual certificate, do the same to the other certificate.
+      if ($dual_certificates) {
+        $certificate_copy_nid = crlt_event_signup_get_certificate_nid('B2', $account->uid, $signup->sid);
+        if ($certificate_copy_nid) {
+          $certificate_copy = node_load($certificate_copy_nid, null, true);
+          if ($certificate_copy && $sid != $certificate_copy->_workflow) {
+            $messages[] = array("Updating the workflow on the dual certificate " . l($certificate_copy->title, "node/$certificate_copy->nid") . " for " . l($account->name, "user/$account->uid") . ".");
+            $certificate_copy->workflow_comment = "Signup #$signup->sid for event #$event->nid attendance record changed";
+            workflow_transition($certificate_copy, $sid);
+          }
+        }
+        else {
+          $messages[] = array(
+             "Failed to update dual certificate for $account->name on signup ($signup->sid) for event (" .
+              l($event->title, 'node/' . $event->nid) .
+            ").",
+            'error'
+          );
+        }
+      }
+    }
+  }
+  crlt_show_messages($messages);
+}
+
+/**
+ * Given a certificate type, user id and signup id, this will return the
+ * corresponding certificate node if for the given user and signup id. It returns
+ * null if the node id isn't found.
+ */
+function crlt_event_signup_get_certificate_nid($type, $uid, $sid) {
+  $sql = "
+    SELECT n.nid
+    FROM {node} n
+    INNER JOIN {content_type_certificate} ctc ON n.nid = ctc.nid
+    WHERE
+      n.type = 'certificate' AND
+      n.vid = ctc.vid AND
+      ctc.field_certificate_type_value = '%s' AND
+      n.uid = %d AND
+      ctc.field_certificate_source_value = 'signup' AND
+      ctc.field_certificate_source_id_value = %d
+  ";
+  return db_result(db_query($sql, $type, $uid, $sid));
+}
+
+/**
+ * Given an event node, this will return the type of certificate specified on
+ * the eligibility field. Returns null otherwise.
+ */
+function crlt_event_get_certificate_type_from_eligibility($event) {
+  $type = null;
+  switch ($event->field_eligible_for_certificate[0]['value']) {
+    case 'Eligible for Graduate Teacher Certificate':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2':
+      $type = 'B1';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Instructional Technology':
+    case 'Eligible for Graduate Teacher Certificate - Instructional Technology':
+      $type = 'B1_it';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B2, Multicultural Teaching':
+    case 'Eligible for Graduate Teacher Certificate - Multicultural Teaching':
+      $type = 'B1_mc';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3':
+    case 'Eligible for Graduate Teacher Certificate - Requirement B3 ':
+      $type = 'B2';
+      break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement D': $type = 'D'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A': $type = 'A'; break;
+    case 'Eligible for Graduate Teacher Certificate - Requirement A and B3':
+      $dual_certificates = TRUE; // The dual certificate will have type B2.
+      $type = 'A';
+      break;
+    case 'Not eligible for Certificate':
+      break;
+  }
+  return $type;
+}
+
+/**
+ * Given an event node, this will return the type of certificate specified on
+ * the eligibility field. Returns false otherwise.
+ */
+function crlt_event_eligible_for_dual_certificate($event) {
+  $dual_certificates = FALSE;
+  if ($event->field_eligible_for_certificate[0]['value'] == 'Eligible for Graduate Teacher Certificate - Requirement A and B3') {
+    $dual_certificates = TRUE; // The dual certificate will have type B2.
+  }
+  return $dual_certificates;
+}
+

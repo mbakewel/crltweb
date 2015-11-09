@@ -1,0 +1,4 @@
+name = CRLT Event
+description = The CRLT Event module.
+core = 6.x
+package = Other

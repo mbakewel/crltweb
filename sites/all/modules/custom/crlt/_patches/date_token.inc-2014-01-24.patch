@@ -1,0 +1,14 @@
+diff --git a/sites/all/modules/date/date/date_token.inc b/sites/all/modules/date/date/date_token.inc
+index 232a7c1..137702a 100644
+--- a/sites/all/modules/date/date/date_token.inc
++++ b/sites/all/modules/date/date/date_token.inc
+@@ -96,6 +96,9 @@ function date_token_values($type, $object = NULL) {
+       $tokens['to-d']              = !empty($date) ? date_format_date($date, 'custom', 'j') : '';
+       $tokens['to-dS']             = !empty($date) ? date_format_date($date, 'custom', 'jS') : '';
+       $tokens['to-time']           = !empty($date) ? date_format_date($date, 'custom', 'H:i') : '';
++//tjfrank - 2014-01-27 - manual patch to allow these tokens
++      $tokens['to-time12ampm']           = !empty($date) ? date_format_date($date, 'custom', 'g:ia') : '';
++      $tokens['to-time12AMPM']           = !empty($date) ? date_format_date($date, 'custom', 'h:iA') : '';
+ 
+     }
+     return $tokens;

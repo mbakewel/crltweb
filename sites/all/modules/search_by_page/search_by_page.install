@@ -1,0 +1,307 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for search_by_page module
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function search_by_page_schema() {
+  $schema['sbp_path'] = array(
+    'description' => t('Contains path definitions for Search by Page module'),
+    'fields' => array(
+      'pid' => array(
+        'description' => t('Primary key'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'last_index_time' => array(
+        'description' => t('When this path was last indexed by search'),
+        'type' => 'int',
+        'size' => 'big',
+        'default' => 0,
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      // Do not use 'path' as a db field - reserved word!
+      'page_path' => array(
+        'description' => t('Path to index'),
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      // Do not use 'module' as a db field - reserved word!
+      'from_module' => array(
+        'description' => t('Module this path came from'),
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      // Do not use 'mid' as a db field - mid() is a function!
+      'modid' => array(
+        'description' => t('Identifier from module'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'language' => array(
+        'description' => t('Language for this path'),
+        'type' => 'varchar',
+        'length' => '12',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'environment' => array(
+        'description' => t('Environment ID'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'role' => array(
+        'description' => t('Role ID used to index this path'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'min_time' => array(
+        'description' => t('Minimum reindex time'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'max_time' => array(
+        'description' => t('Maximum reindex time'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'indexes' => array(
+      'upd_time' => array('last_index_time'),
+      'modl' => array('from_module'),
+      'pth' => array('page_path'),
+      'm_id' => array('modid'),
+      'envi' => array('environment'),
+      'role' => array('role'),
+    ),
+    'primary key' => array('pid'),
+  );
+
+  $schema['sbp_index_users'] = array(
+    'description' => t('Users to be used for search indexing'),
+    'fields' => array(
+      'rid' => array(
+        'description' => t('Role ID'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'uid' => array(
+        'description' => t('User ID of user created for this role'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('rid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function search_by_page_install() {
+  drupal_install_schema('search_by_page');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function search_by_page_uninstall() {
+  drupal_uninstall_schema('search_by_page');
+
+  // Remove information from search index
+  db_query('DELETE FROM {search_dataset} WHERE type=\'search_by_page\'');
+  db_query('DELETE FROM {search_index} WHERE type=\'search_by_page\'');
+  db_query('DELETE FROM {search_node_links} WHERE type=\'search_by_page\'');
+
+  variable_del('search_by_page_settings');
+}
+
+/**
+ * Adds language, environment, and uid fields to sbp_path table.
+ */
+function search_by_page_update_6000() {
+  $ret = array();
+  db_add_field($ret, 'sbp_path', 'language', array(
+      'description' => t('Language for this path'),
+      'type' => 'varchar',
+      'length' => '12',
+      'not null' => TRUE,
+      'default' => '',
+    ));
+
+  db_add_field($ret, 'sbp_path', 'environment', array(
+      'description' => t('Environment ID'),
+      'type' => 'int',
+      'size' => 'big',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  db_add_index($ret, 'sbp_path', 'envi', array('environment'));
+
+  db_add_field($ret, 'sbp_path', 'uid', array(
+      'description' => t('User ID used to index this path'),
+      'type' => 'int',
+      'size' => 'big',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+
+  // Set up environment based on previous settings, if no environment exists
+  $stuff = variable_get('search_by_page_settings', array());
+  if (!count($stuff)) {
+    $envid = 1;
+
+    search_by_page_setting_set('environment_name', $envid, t('default'));
+    search_by_page_setting_set('block_title', $envid, t('Search'));
+    search_by_page_setting_set('page_title', $envid, t('Search'));
+    search_by_page_setting_set('page_path', $envid, 'search_pages');
+    variable_set('search_by_page_default_environment', $envid);
+
+    // Note: Do the sub-module settings here too, because they should all be
+    // done in one update.
+    $fields = array(
+      'field_label' => 'search_by_page_field_label',
+      'button_label' => 'search_by_page_button_label',
+      'sbp_users_roles_indexed' => 'sbp_users_roles_indexed',
+      'sbp_nodes_types_indexed' => 'sbp_nodes_types_indexed',
+      'sbp_nodes_display_type' => 'sbp_nodes_display_type',
+      'sbp_attach_only_listed' => 'sbp_attach_only_listed',
+      'sbp_attach_node_types' => 'sbp_attach_node_types',
+      'sbp_attach_field_types' => 'sbp_attach_field_types',
+      'sbp_attach_only_listed' => 'sbp_attach_only_listed',
+      'sbp_attach_prepend_node_titles' => 'sbp_attach_prepend_node_titles',
+      'sbp_attach_title_sep' => 'sbp_attach_title_sep',
+      'sbp_attach_use_description' => 'sbp_attach_use_description',
+    );
+
+    foreach ($fields as $field => $oldfield) {
+      if ($value = variable_get($oldfield, 0)) {
+        search_by_page_setting_set($field, $envid, $value);
+        variable_del($oldfield);
+      }
+    }
+  }
+
+  // Set default environment and language
+  $lang = language_default('language');
+  $ret[] = update_sql("UPDATE {sbp_path} SET language='%s'", $lang);
+  $ret[] = update_sql("UPDATE {sbp_path} SET environment=1");
+
+  return $ret;
+}
+
+/**
+ * Removes uid field, adds role field.
+ */
+function search_by_page_update_6001() {
+  $ret = array();
+  db_drop_field($ret, 'sbp_path', 'uid');
+  db_add_field($ret, 'sbp_path', 'role', array(
+      'description' => t('Role ID used to index this path'),
+      'type' => 'int',
+      'size' => 'big',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => DRUPAL_ANONYMOUS_RID,
+    ));
+
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ *
+ * Adds role index to {sbp_path}, and new database table for indexing users.
+ */
+function search_by_page_update_6002() {
+  $ret = array();
+  db_add_index($ret, 'sbp_path', 'role', array('role'));
+
+  $newtable = array(
+    'description' => t('Users to be used for search indexing'),
+    'fields' => array(
+      'rid' => array(
+        'description' => t('Role ID'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'uid' => array(
+        'description' => t('User ID of user created for this role'),
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('rid'),
+  );
+
+  db_create_table($ret, 'sbp_index_users', $newtable);
+
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ *
+ * Adds fields to sbp_path table and cron setting default.
+ */
+function search_by_page_update_6003() {
+  $ret = array();
+
+  db_add_field($ret, 'sbp_path', 'min_time', array(
+      'description' => t('Minimum reindex time'),
+      'type' => 'int',
+      'size' => 'big',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 1,
+    ));
+
+  db_add_field($ret, 'sbp_path', 'max_time', array(
+      'description' => t('Maximum reindex time'),
+      'type' => 'int',
+      'size' => 'big',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+
+  variable_set('sbp_cron_limit', variable_get('search_cron_limit', 100));
+
+  return $ret;
+}

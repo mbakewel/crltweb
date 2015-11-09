@@ -1,0 +1,203 @@
+<?php
+
+function crlt_sitemaker_migration_menu() {
+  $items = array();
+  $items['crlt/sitemaker/migration-batch'] = array(
+    'title' => 'SiteMaker Migration Batch',
+    'page callback' => 'crlt_sitemaker_migration_batch',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+function crlt_sitemaker_migration_batch() {
+  return "BATCH ALREADY RAN!";
+  $sql = " SELECT idtemp_import_certificates as id FROM {temp_import_certificates} ORDER BY date_created ASC ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_sitemaker_migration_batch_process', array($data->id));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_sitemaker_migration_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_sitemaker_migration_batch_process($id, &$context) {
+  global $user;
+  // Load the data for this certificate.
+  $sql = " SELECT * FROM {temp_import_certificates} WHERE idtemp_import_certificates = %d ";
+  $results = db_query($sql, $id);
+  $data = db_fetch_object($results);
+  //drupal_set_message('<pre>' . print_r($data, true) . '</pre>');
+  // Build the certificate node.
+  $node = new stdClass();
+  $node->title = "Certificate - {$data->type}";
+  $node->type = 'certificate';
+  $node->created = strtotime($data->date_created);
+  $node->body = $data->body;
+  if (isset($data->term) && $data->term != '') {
+    $node->field_certificate_term = array(array(
+      'value' => crlt_field_allowed_value_key_from_label('field_certificate_term', $data->term)
+    ));
+  }
+  $node->field_certificate_type = array(array('value' => $data->type));
+  $node->field_certificate_agreement = array(array('value' => 1));
+  $node->field_certificate_sponsor_unit = array(array('value' => 'other'));
+  $node->field_certificate_source = array(array('value' => 'sitemaker'));
+  $node->field_certificate_source_id = array(array('value' => $data->idtemp_import_certificates));
+  if (isset($data->class) && $data->class != '') {
+    $parts = explode('|', $data->class);
+    if (sizeof($parts) >= 2) { $data->class = $parts[0]; }
+    $node->field_certificate_class = array(array(
+      'value' => $data->class
+    ));
+  }
+  // Figure out certificate node author, create new user account if necessary.
+  $sql = " SELECT uid FROM {users} WHERE name = '%s' ";
+  $result = db_query($sql, $data->created_by);
+  $account = db_fetch_object($result);
+  if (isset($account->uid)) { $node->uid = $account->uid; }
+  else {
+    $fields = array(
+      'name' => $data->created_by,
+      'mail' => $data->created_by . '@umich.edu',
+      'pass' => user_password(8),
+      'status' => 1
+    );
+    $account = user_save('', $fields);
+    if ($account) {
+      $node->uid = $account->uid;
+      drupal_set_message('Created new user (' . $data->created_by . ')!');
+    }
+    else {
+      $drupal_set_message('Failed to save new user (' . $data->created_by  . ')!', 'error');
+      return; 
+    }
+  }
+  // If there is a class name, attach it to the node.
+  if (isset($data->class_name) && $data->class_name != '') {
+    $node->field_certificate_class_name = array(array('value' => $data->class_name));
+  }
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // Save the Certificate node. Swap current user with certificate author, then swap back after saving the node.
+  $current_user = $user;
+  $user = user_load($account->uid);
+  $node->workflow_stamp = $node->created;
+  node_save($node);
+  // Revert the user.
+  $user = $current_user;
+  //drupal_set_message("({$data->type}) Saved node. " . l($node->title, "node/{$node->nid}"));
+  // Grab the latest node id and reload the node.
+  $nid = db_result(db_query(" SELECT nid FROM {node} ORDER BY nid DESC LIMIT 1 "));
+  $node = node_load($nid, null, TRUE);
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  $sid = null;
+  // Adjust the workflow state of the certificate to match the sitemaker status.
+  // Note, status trumps verification status.
+  switch ($data->status) {
+    case 'approved': $sid = 10; break;
+    case 'revision requested': $sid = 9; break;
+    case 'under review': $sid = 8; break;
+  }
+  // Determine workflow comment, if any. If it is approved, then use verification_comment, 
+  // Otherwise use feedbackprivate, if it exists.
+  $node->workflow_comment = "";
+  if ($sid == 10) {
+    if (isset($data->feedbackprivate) && $data->feedbackprivate != '') {
+      $node->workflow_comment .= $data->feedbackprivate;
+    }
+    if (isset($data->verification_comment) && $data->verification_comment != '') {
+      if ($node->workflow_comment != '') { $node->workflow_comment .= '\n\n'; }
+      $node->workflow_comment .= $data->verification_comment;
+    }
+  }
+  else if (isset($data->feedbackprivate) && $data->feedbackprivate != '') {
+    $node->workflow_comment = $data->feedbackprivate;
+  }
+  else if (isset($data->verification_comment) && $data->verification_comment != '') {
+    $node->workflow_comment = $data->verification_comment;
+  }
+  // If there is a faculty member uniqname/email, or a mentor uniqname/email, set it
+  // as the certificate mail value, and swap the current with the account attached
+  // to the e-mail address. Create the account if it doesn't exist.
+  $current_user = $user;
+  $mail = isset($data->faculty_member_email) ? $data->faculty_member_email : null;
+  if (!$mail) { $mail = isset($data->faculty_member_email) ? $data->mentor_email : null; }
+  if ($mail) {
+    $mail = trim($mail);
+    $name = $mail;
+    if (valid_email_address($name)) {
+      $name = substr($name, 0, strpos($name, '@')+1);
+    }
+    else { $mail .= '@umich.edu'; }
+    // Create mentor account if it doesn't exist.
+    $sql = " SELECT uid FROM {users} WHERE name = '%s' ";
+    $result = db_query($sql, $name);
+    $mentor_account = db_fetch_object($result); 
+    if (!isset($mentor_account->uid)) {
+      $fields = array(
+        'name' => $name,
+        'mail' => $mail,
+        'pass' => user_password(8),
+        'status' => 1
+      );
+      $mentor_account = user_save('', $fields);
+      if (!$mentor_account) {
+        $drupal_set_message('Failed to save new mentor (' . $name  . ')!', 'error');
+        return;
+      }
+    }
+    // Update the node with the mail value, and any other mentor data if it is present.
+    $node->field_certificate_mail = array(array('value' => $mail));
+    if (isset($data->mentorinstitution) && !in_array($data->mentorinstitution, array('', '-- select --'))) {
+      if ($data->mentorinstitution == '-University of Michigan-') { $data->mentorinstitution = 'University of Michigan'; }
+      $node->field_certificate_mentor_institu = array(array(
+        'value' => crlt_field_allowed_value_key_from_label('field_certificate_mentor_institu', $data->mentorinstitution)
+      ));
+    }
+    if (isset($data->mentordiscipline) && !in_array($data->mentordiscipline, array('', '-- select academic discipline --'))) {
+      if ($data->mentordiscipline == 'x: other') { $data->mentordiscipline = 'Other'; }
+      $node->field_certificate_mentor_discipl = array(array(
+        'value' => crlt_field_allowed_value_key_from_label('field_certificate_mentor_discipl', $data->mentordiscipline)
+      ));
+    }
+    node_save($node);
+    $node = node_load($node->nid, null, true);
+    // Load the mentor, and swap with current user so workflow actor is marked properly.
+    $mentor_account = user_load($mentor_account->uid);
+    $user = $mentor_account;
+    //drupal_set_message("Loaded mentor: {$mentor_account->uid} / {$mentor_account->name}");
+  }
+  // Finally, adjust the workflow state.
+  if (isset($sid)) {
+    $node->workflow_stamp = $node->created;
+    // Don't let tjfrank be the current user, use mbakewel instead.
+    if ($user->name == 'tjfrank') {
+      $current_user = $user;
+      $user = user_load(1);
+    }
+    workflow_transition($node, $sid);
+  }
+  // Revert back to current user. 
+  $user = $current_user;
+  $context['message'] = t('Processing @id', array('@id' => $data->date_created));
+}
+
+function crlt_sitemaker_migration_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/sitemaker/migration-batch'));
+}
+

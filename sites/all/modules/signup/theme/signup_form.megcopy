@@ -1,0 +1,20 @@
+  module_load_include('inc', 'hierarchical_select', 'includes/common');
+
+  $voc = 'Units';
+  $vocabulary = taxonomy_vocabulary_machine_name($voc);
+
+  $form['signup_form_data']['HSUnit'] = array (
+	'#title' => t('Choose Unit'),
+	'#type' => 'hierarchical_select',
+	'#config' = > array (
+		'module' => 'hs_taxonomy', 
+		'params' => array(
+			'vid' => (int) $vocabualry->vid,
+			'exclude_tid' => NULL, 
+			'root_term' => NULL,
+			'entity_count_for_node_type' => NULL,
+		),
+	),
+	'#default_value' => $tids,
+);
+

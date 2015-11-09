@@ -1,0 +1,15 @@
+name = Cosign
+description = Manages automatic user login and supplies cosign logout bar
+dependencies[] = webserver_auth
+core = 6.x
+
+; Information added by drupal.org packaging script on 2007-01-30
+project = "cosign"
+
+
+; Information added by drupal.org packaging script on 2011-06-07
+version = "6.x-1.7"
+core = "6.x"
+project = "cosign"
+datestamp = "1307472415"
+

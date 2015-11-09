@@ -1,0 +1,100 @@
+<?php
+// $Id: signup_batch.module
+
+/**
+ * implements hook_menu()
+ */
+function signup_batch_menu() {	
+	$items  = array();
+	$items['signup_batch'] = array(
+		'title' => "Sign Up Batch",
+		'page callback' => "signup_batch_entry", // after visit drupal6/person, person_personal_info() function is called
+		'type' => MENU_NORMAL_ITEM, // drupal's default menu type	
+		'weight' => '10', // we want to display person link below in our nav menu
+		'access arguments' => array('clone node'),
+	);
+	return $items; // finally, do not forget to return $items array
+}
+
+function signup_batch_entry(){
+	$output = drupal_get_form('signup_batch_form');
+	return $output;
+}
+
+/**
+ * form builder; person add form
+ */
+function signup_batch_form($form_state){
+ 
+	// drupal_set_title('Add New Person');
+	$form = array();	
+ 
+	$form['nid'] = array(
+		'#title' => 'Node ID',
+		'#type' => 'textfield',
+		'#size' => '30',
+	);
+ 
+	$form['regstatus'] = array(
+		'#title' => 'Registration Status',
+		'#type' => 'select',
+		'#options' =>  array(
+			'1' => t('Registered'), 
+			'2' => t('Waitlisted'), 
+			'4' => t('Registered (Faculty)'),
+			'5' => t('Registered (Staff, Graduate Student or Post-Doc)'),
+		),	
+	);
+ 
+	$form['attended'] = array(
+		'#title' => 'Attended?',
+		'#type' => 'checkbox',
+	);
+ 
+	$form['uniqnames'] = array(
+		'#title' => 'Uniqnames',
+		'#type' => 'textarea',
+		'#wysiwyg' => false,
+	);
+ 
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',		
+	);
+ 
+	if (user_access('clone node')) {
+		drupal_set_message('really!!!?');
+		return $form;	
+	} else {
+		drupal_set_message('Acess Denied');
+		return false;
+	}
+}
+
+function signup_batch_form_submit($form,$form_state){
+	$nid = trim($form_state['values']['nid']);	
+	$attended = trim($form_state['values']['attended']);	
+	$regstatus = trim($form_state['values']['regstatus']);	
+	$uniqname = trim($form_state['values']['uniqnames']);
+	$reg_users = explode(PHP_EOL,$uniqname);
+	foreach ($reg_users as $value)  {
+		$query = "SELECT UID from users where name = '%s'";
+		$result1 = db_query($query, trim($value));
+		if ($result1 !== FALSE){
+			drupal_set_message("$result1 $value.");
+		} else {
+			drupal_set_message("non-existant user $value.");
+		}
+		$query = "INSERT INTO temp_signup_batch (nid, attended, reg_status, uniqname, uid ) VALUES ('%s', '%s', '%s', '%s', '%s')";
+		$result = db_query($query, $nid, $attended, $regstatus, trim($value), $result1);
+		if ($result !== FALSE){
+			drupal_set_message("data saved successfully $value.");
+		} else {
+			drupal_set_message("ERROR: data not saved successfully $value.");
+		}
+	}
+}
+
+function signup_batch_perm() {
+	return array('signup batch');
+}

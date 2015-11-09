@@ -1,0 +1,17 @@
+diff --git a/sites/all/modules/signup/signup.module b/sites/all/modules/signup/signup.module
+index 0a862bc..7267b6f 100644
+--- a/sites/all/modules/signup/signup.module
++++ b/sites/all/modules/signup/signup.module
+@@ -1306,6 +1306,12 @@ function signup_sign_up_user($signup_form, $notify_user = TRUE, $reset_node_load
+       $signup->anon_mail = $signup_anon_mail;
+     }
+ 
++    // CRLT Patch: If the 'attended' property is set on the signup form,
++    // place it in the signup object.
++    if (isset($signup_form['attended'])) {
++      $signup->attended = $signup_form['attended'];
++    } 
++
+     // Invoke hook_signup_data_alter() to let other modules change this.
+     drupal_alter('signup_data', $signup, $signup_form);
+ 

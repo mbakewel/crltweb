@@ -1,0 +1,16 @@
+; $Id: hs_user_terms.info,v 1.1 2010/03/17 20:42:58 cpliakas Exp $
+name = Hierarchical Select User Terms
+description = Use Hierarchical Select for User Terms.
+dependencies[] = hierarchical_select
+dependencies[] = taxonomy
+dependencies[] = hs_taxonomy
+dependencies[] = user_terms
+package = Form Elements
+core = 6.x
+
+; Information added by drupal.org packaging script on 2010-07-14
+version = "6.x-1.0"
+core = "6.x"
+project = "hs_user_terms"
+datestamp = "1279121707"
+

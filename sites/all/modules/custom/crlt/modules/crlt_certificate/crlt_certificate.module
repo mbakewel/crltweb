@@ -1,0 +1,1029 @@
+<?php
+
+/**
+ * Implements hook_init().
+ */
+/*function crlt_certificate_init() {
+  drupal_add_js(drupal_get_path('module', 'crlt_certificate') . '/crlt_certificate.js');
+}*/
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_certificate_menu() {
+  $items = array();
+  $items['crlt/certificate/settings'] = array(
+    'title' => 'CRLT Certificate Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_certificate_settings_form'),
+    'access arguments' => array('administer content types')
+  );
+  $items['crlt/certificate/workflow-instructions'] = array(
+    'title' => 'CRLT Certificate Workflow Instructions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_certificate_workflow_instructions_form'),
+    'access arguments' => array('administer content types')
+  );
+  $items['crlt/certificate/mail-settings'] = array(
+    'title' => 'CRLT Certificate Mail Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_certificate_mail_settings'),
+    'access arguments' => array('administer content types'),
+    'file' => 'crlt_certificate_mail_settings.form.inc'
+  );
+  $items['um.gtc/my-portfolio'] = array(
+    'title' => 'My GTC Portfolio',
+    'page callback' => 'crlt_my_gtc_portfolio',
+    'access arguments' => array('access content')
+  );
+  $items['crlt/certificate/cancel/%'] = array(
+    'title' => 'CRLT Certificate Cancellation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crlt_certificate_cancel_form', 3),
+    'access callback' => 'crlt_certificate_cancel_access',
+    'access arguments' => array(3)
+  );
+  $items['crlt/certificate/updated-time/batch'] = array(
+    'title' => 'CRLT Certificate Update Time Batch',
+    'page callback' => 'crlt_certificate_updated_time_batch',
+    'access arguments' => array('administer users')
+  );
+  return $items;
+}
+
+/**
+ *
+ */
+function crlt_my_gtc_portfolio() {
+  global $user;
+  if ($user->uid) {
+    drupal_goto("user/{$user->uid}/certificates");
+    return '';
+  }
+  else {
+    drupal_set_message(l('Login', 'user/login', array('query' => array('destination' => implode('/', arg())))) . ' to view this page.', 'warning');
+    return '';
+  }
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function crlt_certificate_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($node->type != 'certificate') { return; }
+  if ($op != 'view') { return; }
+  global $user;
+  // Only authenticated users who are admins, staff, a certificate's author, or a certificate's verifier,
+  // may view non GTC+ certificate nodes.
+  // @TODO - why isn't this in an access_callback function via hook_menu_alter()?
+  if (in_array('CRLT Staff', $user->roles) || in_array('admin', $user->roles)) {
+    return;
+  }
+  $type = $node->field_certificate_type[0]['value'];
+  if (
+    $user->uid != 0 &&
+    !in_array($type, array('A', 'B1', 'B1_mc', 'B1_it', 'B2', 'C1', 'C2', 'D', 'E'))
+  ) {
+    // OK to view...
+    return;
+  }
+  else if  (
+    $user->uid == $node->uid ||
+    (
+      in_array($type, array('C1', 'C2', 'D')) &&
+      isset($node->field_certificate_mail[0]['value']) &&
+      $node->field_certificate_mail[0]['value'] != '' &&
+      $node->field_certificate_mail[0]['value'] == $user->mail
+    )
+  ) {
+    // OK to view...
+    return;
+  }
+  drupal_set_message("Sorry, you are not authorized to view certificate $node->nid. If the problem persists, please e-mail UMGraduateTeacherCertficate@umich.edu for more information.", 'error');
+  drupal_goto('');
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+/*function crlt_certificate_menu_alter(&$items) {
+  // The 'Certificates' tab that shows up on user profiles,
+  // should only be visible on the current user's profile,
+  // except for admins/staff, they can always see it. 
+  // @TODO - it appears we can't alter paths created by Views...
+  drupal_set_message('<pre>' . print_r($items, true) . '</pre>');
+  $items['user/%/certificates']['access callback'] = '_crlt_certificate_user_certificates_access_callback';
+}
+function _crlt_certificate_user_certificates_access_callback() {
+  global $user;
+  drupal_set_message("Hi $user->name");
+  return TRUE;
+}*/
+
+/**
+ * Implements hook_form_alter().
+ */
+function crlt_certificate_form_alter(&$form, &$form_state, $form_id) {
+  global $user;
+  //drupal_set_message($form_id);
+  //drupal_set_message('<pre>' . print_r($form, true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($form['#node'], true) . '</pre>');
+
+  // Determine if user is admin or not.
+  $admin = FALSE;
+  if (in_array('CRLT Staff', $user->roles) || in_array('admin', $user->roles)) {
+    $admin = TRUE;
+  }
+
+  if ($form_id == 'certificate_node_form') {
+
+    // Attach our #after_build handler so we can modify cck fields.
+    $form['#after_build'][] = 'crlt_certificate_form_after_build';
+
+    // Add a custom validate handler to the form.
+    $form['#validate'][] = 'crlt_certificate_node_form_validate';
+
+    // Hide the 'Split Summary at Cursor Button'.
+    $form['body_field']['teaser_include']['#access'] = FALSE;
+
+    // Grab the nid.
+    $nid = $form['nid']['#value'];
+
+    // Are we working with a new node, or not?
+    $new_node = !$nid ? TRUE : FALSE;
+    
+    // If we're adding a certificate node, change the page title.
+    if ($new_node) { drupal_set_title('Submit documentation'); }
+
+    // Determine the certificate type. Look in the URL first, or use the node's value if the node exists.
+    $type = isset($_GET['field_certificate_type']) ? $_GET['field_certificate_type'] : null;
+    if (!$new_node) { $type = $form['#node']->field_certificate_type[0]['value']; }
+
+    // If we're on the node add form, and we don't have a certificate type,
+    // display links to create certificates in the form prefix.
+    if ($new_node && !$type) {
+      $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+      $msg = '<p>Click the type of certificate to create one:</p><ul>';
+      foreach($certificate_types as $value => $label) {
+        $msg .= '<li>' . l($label, 'node/add/certificate', array('query' => 'field_certificate_type=' . $value)) . ' (' . $value . ')</li>';
+      }
+      $msg .= '</ul>';
+      $form['#prefix'] .= $msg;
+    }
+
+    // Show helpful links to admins.
+    if ($user->uid != 0 && user_access('administer content types')) {
+      $destination = implode('/', arg());
+      $link_options = array('query' => array('destination' => $destination));
+      drupal_set_message(l('CRLT Certificate Mail Settings', 'crlt/certificate/mail-settings', $link_options));
+      drupal_set_message(l('CRLT Certificate Settings', 'crlt/certificate/settings', $link_options));
+      drupal_set_message(l('CRLT Certificate Workflow Instructions', 'crlt/certificate/workflow-instructions', $link_options));
+      drupal_set_message(l('CRLT Certificate Overview', 'crlt/certificate/overview'));
+    }
+
+    // Form F0 is the only form that requires the user input a title,
+    // otherwise we make it optional, hide it and automatically generate it.
+    if ($type != 'F0') {
+      $form['title']['#required'] = FALSE;
+      $form['title']['#prefix'] = '<div style="display: none;">';
+      $form['title']['#suffix'] = '</div>';
+      $form['title']['#default_value'] = "Certificate - $type";
+    }
+
+    // Show an informative message when the user is editing a certificate that is in need of a revision.
+    $workflow_name = $form['#wf']->name;
+    $sid = $form['workflow'][$workflow_name]['#default_value'];
+    if (!$admin && !$new_node && $sid == 9) {
+      drupal_set_message('Make modifications to this certificate, then click "Save" to submit it for verification.', 'warning');
+    }
+
+  }
+  else if ($form_id == 'workflow_tab_form') {
+
+    // FYI, This form only shows up on existing nodes, not when creating a new certificate node.
+
+    //drupal_set_message('<pre>' . print_r($form['node']['#value'], true) . '</pre>');
+    
+    if ($form['node']->type != 'certificate') { return; }
+
+    // Grab the certificate type and nid.
+    $type = $form['node']['#value']->field_certificate_type[0]['value'];
+    $nid = $form['node']['#value']->nid;
+
+    // What's the current workflow name and state id?
+    $workflow_name = $form['#wf']->name;
+    $sid = $form['workflow'][$workflow_name]['#default_value'];
+
+    // This form is only accessible to admins/staff and internal verifiers.
+    $access = FALSE;
+    $mail = $form['node']['#value']->field_certificate_mail[0]['value'];
+    if ($admin) { $access = TRUE; }
+    else if (
+      $sid == 7 &&
+      in_array($type, array('C1', 'C2', 'D')) &&
+      strpos($mail, 'umich.edu') !== FALSE &&
+      $user->name == db_result(db_query("SELECT name FROM {users} WHERE mail = '%s'", $mail))
+    ) { $access = TRUE; }
+    if (!$access) {
+      drupal_set_message('Sorry, you are not authorized to access this certificate workflow. If the problem persists, e-mail UMGraduateTeacherCertficate@umich.edu for assistance.', 'error');
+      drupal_goto("node/{$form['node']['#value']->nid}");
+    }
+
+    // Add workflow instructions to form prefix.
+    $form['#prefix'] .= '<div class="messages warning">' .
+      variable_get(crlt_certificate_key($type, $sid), '') .
+    '</div>';
+
+    // Render the node at the top of the form. We do this because we're having troubles with form
+    // alterations on the workflow form, when it is on the default node view page.
+    $form['#prefix'] .= node_view(node_load($form['node']['#value']->nid), false, TRUE, FALSE);
+
+    // Add generic workflow instructions for all to see.
+    $form['workflow']['#prefix'] .= '<div class="messages warning">' .
+      '<p>To help others understand your intentions, you may optionally enter notes in the <strong>"Comment"</strong> field.&nbsp;' .
+      'Then click the <strong>"Submit"</strong> button to update the Certificate workflow.</p>' .
+    '</div>';
+
+    // For non admins, on form's that require a faculty member or mentor to adjust the workflow
+    // change the radio button labels to "I Agree", and/or "I Disagree".
+    if (!$admin) {
+      if (in_array($type, array('C1', 'C2', 'D'))) {
+        $form['workflow'][$workflow_name]['#options'][8] = 'I Agree';
+        $form['workflow'][$workflow_name]['#options'][11] = 'I Disagree';
+        // Hide unneeded states.
+        $remove = array(6, 10, 12); 
+        foreach ($remove as $sid) {
+          unset($form['workflow'][$workflow_name]['#options'][$sid]);
+        }
+      }
+    }
+
+    // Hide the workflow scheduler elements.
+    $form['workflow']['workflow_scheduled']['#access'] = FALSE;
+    $form['workflow']['workflow_scheduled_date']['#access'] = FALSE;
+    $form['workflow']['workflow_scheduled_hour']['#access'] = FALSE;
+
+  }
+}
+
+/**
+ * A custom validation handler for the certificate node form.
+ */
+function crlt_certificate_node_form_validate($form, &$form_state) {
+
+  //drupal_set_message('<pre>' . print_r($form_state['values'], true) . '</pre>');
+  $type = $form_state['values']['field_certificate_type'][0]['value'];
+
+  // If a e-mail address is entered, make sure it is valid.
+  if ($form_state['values']['field_certificate_mail'][0]['value'] != '') {
+    $mail = $form_state['values']['field_certificate_mail'][0]['value'];
+    $internal = TRUE;
+    if (strpos($mail, 'umich.edu') === FALSE) { $internal = FALSE; }
+    if (!valid_email_address($mail)) {
+      form_set_error('field_certificate_mail', 'You must enter a valid e-mail address.');
+    }
+    // Form D is the only form that may have an external e-mail address entered.
+    else if ($type != 'D' && !$internal) {
+      form_set_error('field_certificate_mail', 'You must enter a umich.edu e-mail address.');
+    }
+    // If form D has an external verifier, then the mentor institution and discipline are required.
+    else if ($type == 'D' && !$internal) {
+      if ($form_state['values']['field_certificate_mentor_institu'][0]['value'] == '') {
+        form_set_error('field_certificate_mentor_institu', "You must select the mentor's institution.");
+      }
+      if ($form_state['values']['field_certificate_mentor_discipl'][0]['value'] == '') {
+        form_set_error('field_certificate_mentor_discipl', "You must select the mentor's academic discipline.");
+      }
+    }
+  }
+
+  // Make sure the user has agreed to the certificate terms.
+  if (!$form_state['values']['field_certificate_agreement'][0]['value']) {
+    form_set_error('field_certificate_agreement', 'You must agree to the certificate terms and conditions.');
+  }
+
+}
+
+/**
+ *
+ */
+function crlt_certificate_form_after_build($form, &$form_state) {
+  //drupal_set_message('<pre>' . print_r($form['#node']->field_certificate_type, true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($form['#wf'], true) . '</pre>');
+  global $user;
+
+  // Grab the nid.
+  $nid = $form['nid']['#value'];
+
+  // Determine if user is admin or not.
+  $admin = FALSE;
+  if (in_array('CRLT Staff', $user->roles) || in_array('admin', $user->roles)) {
+    $admin = TRUE;
+  }
+
+  // Are we working with a new node, or not?
+  $new_node = !$nid ? TRUE : FALSE;
+
+  // What's the current workflow name and state id?
+  $workflow_name = $form['#wf']->name;
+  $sid = $form['workflow'][$workflow_name]['#default_value'];
+
+  // Since we are having issues making proper form alterations to the workflow form
+  // and we need the workflow form to be present to access some data from it, we're
+  // just going to hide the workflow on the form, and everyone will use the workflow
+  // tab instead.
+  $form['workflow']['#prefix'] = '<div style="display: none;">';
+  $form['workflow']['#suffix'] = '</div>';
+
+  // Determine the certificate type. Look in the URL first, or use the node's value if the node exists.
+  $type = isset($_GET['field_certificate_type']) ? $_GET['field_certificate_type'] : null;
+  if (!$new_node) { $type = $form['#node']->field_certificate_type[0]['value']; }
+
+  // Grab the certificate types.
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+
+  // Display the CRLT instructions for this particular certificate type, according to the help text entered at
+  // crlt/certificate/settings.
+  if ($type) {
+
+    // Set the page title.
+    $title = "Submit documentation";
+    if (!$new_node) {
+      $title = "Edit";
+    }
+    $title .= " - " . $certificate_types[$type] . " [" . $type . "]";
+    drupal_set_title($title);
+
+    // Hide the certificate type field.
+    $form['field_certificate_type']['#prefix'] = '<div style="display: none;">';
+    $form['field_certificate_type']['#suffix'] = '</div>';
+    $form['field_certificate_type']['value']['#value'][0] = $type;
+
+    // Display the instructions.
+    $form['#prefix'] .= '<div class="messages warning">' .
+      variable_get(crlt_certificate_key($type, 'body'), '') .
+    '</div>';
+    $form['field_certificate_agreement']['#prefix'] .= '<div class="messages warning">' .
+      variable_get(crlt_certificate_key($type, 'agreement'), '') .
+    '</div>';
+    $form['field_certificate_mail']['#prefix'] .= '<div class="messages warning">' .
+      variable_get(crlt_certificate_key($type, 'verifier'), '') .
+    '</div>';
+
+  }
+
+  // New nodes...
+  if ($new_node)  {
+
+    // If we don't have a certificate type specified...
+    if (!$type) {
+
+      // Hide the title, body, agreement checkbox and buttons from the user.
+      $form['title']['#access'] = FALSE;
+      $form['body_field']['#access'] = FALSE;
+      $form['field_certificate_agreement']['#access'] = FALSE;
+      $form['buttons']['preview']['#access'] = FALSE;
+      $form['buttons']['submit']['#access'] = FALSE;
+
+    }
+    else {
+      // We have a certificate type...
+
+      // Form B2, C1, C2 and D go directly to needs verification.
+      if (in_array($type, array('B2', 'C1', 'C2', 'D'))) {
+        drupal_add_js('$(":radio[name=\'workflow\'][value=\'7\']").attr(\'checked\', \'checked\');', 'inline', 'footer'); 
+      }
+
+    }
+
+  }
+  // Existing nodes...
+  else if (!$new_node) {
+
+    // Normal Users may not edit the certificate node unless it is in the
+    // "9 - Needs Work (revision requested)" workflow state.
+    if ($sid != 9 && !$admin) {
+      drupal_set_message('Sorry, you cannot edit this certificate since it has already been submitted. Please e-mail UMGraduateTeacherCertficate@umich.edu if the problem persists.', 'error');
+      drupal_goto("node/$nid");
+    }
+    else if ($sid == 9 && !$admin) {
+      // User is editing a certificate, move the hidden workflow radio button to the next state.
+      // Any form with a verifier, gets moved back to 7 (Needs Verification), all others get moved
+      // back to 6 (New Request).
+      $sid_next = 6;
+      //drupal_set_message('Make modifications to this certificate, then click "Save" to submit it for verification.', 'warning');
+      if (in_array($type, array('C1', 'C2', 'D'))) { $sid_next = 7; }
+      drupal_add_js('$(":radio[name=\'workflow\'][value=\'' . $sid_next . '\']").attr(\'checked\', \'checked\');', 'inline', 'footer');
+    }
+
+  }
+
+  // Depending on the certificate type, change the field_certificate_mail
+  // field label accordingly.
+  $label = null;
+  switch ($type) {
+    case 'C1': $label = "Faculty"; break;
+    case 'C2': $label = "Consultant"; break;
+    case 'D': $label = "Faculty Mentor"; break;
+  }
+  if ($label) {
+    $form['field_certificate_mail'][0]['value']['#title'] = "$label E-mail Address";
+  }
+
+  // Let's remove access from every single field, then re-add access depending
+  // on the certificate type.
+  $fields = array(
+    'field_certificate_type',
+    'field_certificate_term',
+    'field_certificate_class',
+    'field_certificate_class_name',
+    'field_certificate_thumbnail',
+    'field_certificate_link',
+    'field_certificate_sponsor_unit',
+    'field_certificate_mail',
+    'field_certificate_mentor_institu',
+    'field_certificate_mentor_discipl',
+    'taxonomy'
+  );
+  foreach($fields as $field) {
+    $form[$field]['#access'] = FALSE;
+  }
+
+  // Determine which fields will get access, then re-add the access.
+  $access = array();
+  switch ($type) {
+    case 'A':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_sponsor_unit';
+      break;
+    case 'B1':
+    case 'B1_mc':
+    case 'B1_it':
+    case 'G':
+    case 'G_it':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_sponsor_unit';
+      break;
+    case 'B2':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_class';
+      break;
+    case 'C1':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_class_name';
+      $access[] = 'field_certificate_mail';
+      break;
+    case 'C2':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_mail';
+      break;
+    case 'D':
+      $access[] = 'field_certificate_term';
+      $access[] = 'field_certificate_mail';
+      $access[] = 'field_certificate_mentor_institu';
+      $access[] = 'field_certificate_mentor_discipl';
+      break;
+    case 'E':
+      break;
+    case 'F':
+      $access[] = 'field_certificate_thumbnail';
+      break;
+    case 'F0':
+      break;
+    case 'H':
+      $access[] = 'field_certificate_link';
+      break;
+    case 'I':
+      $access[] = 'field_certificate_link';
+      break;
+    case 'J':
+      $access[] = 'field_certificate_link';
+      break;
+  }
+
+  // Set the required fields.
+  foreach($access as $field) {
+    // The taxonomy field, select lists, and other fields, each use a different
+    // structure when dictating #access and #required. Set each as necessary.
+    // @UPDATE - we're not using the taxonomy field anymore.
+      $form[$field]['#access'] = TRUE;
+      $delta = 0;
+      // Image fields.
+      if (isset($form[$field][$delta]) && $form[$field][$delta]['#type'] == 'imagefield_widget') {
+        // @TODO - this only marks it as required.
+        // @see - https://api.drupal.org/api/drupal/developer!topics!forms_api_reference.html/6#file
+        $form[$field][$delta]['#required'] = TRUE;
+      }
+      // Default fields.
+      else if ($form[$field][$delta]) { // other field types
+        while (isset($form[$field][$delta])) {
+          $form[$field][$delta]['value']['#required'] = TRUE;
+          $delta++;
+        }
+      }
+      // Select lists.
+      else { 
+        $form[$field]['value']['#required'] = TRUE;
+      }
+  }
+
+  // Remove requirements from special cases...
+  // Form D has optional mentor institution/discipline fields, only if
+  // the e-mail address is internal to umich.edu (this is covered by our
+  // validation handler).
+  if ($type == 'D') {
+    $form['field_certificate_mentor_institu']['value']['#required'] = FALSE;
+    $form['field_certificate_mentor_discipl']['value']['#required'] = FALSE;
+  }
+
+  // For non admins, remove the CRLT option from the Sponsoring Unit drop down menu if it is
+  // a new node. If it is an existing node, remove the option, unless the
+  // option is the default value.
+  if ($form['field_certificate_sponsor_unit']['#access'] && !$admin) {
+    if ($new_node) {
+      unset($form['field_certificate_sponsor_unit']['value']['#options']['crlt']);
+    }
+    else if ($form['field_certificate_sponsor_unit']['#default_value'][0]['value'] != 'crlt') {
+      unset($form['field_certificate_sponsor_unit']['value']['#options']['crlt']);
+    }
+  }
+
+  return $form;
+}
+
+/**
+ *
+ */
+function crlt_certificate_element_id($name) {
+  return "crlt_certificate_element_$name";
+}
+
+/**
+ *
+ */
+function crlt_certificate_settings_form(&$form_state) {
+  $form = array();
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+  //drupal_set_message('<pre>' . print_r($certificate_types, true) . '</pre>');
+  foreach ($certificate_types as $index => $type) {
+    $form[$index] = array('#value' => '<h2> [' . $index . '] ' . $type . '</h2>');
+    $key = crlt_certificate_key($index, 'body');
+    $form[$key] = array(
+      '#type' => 'textarea',
+      '#title' => 'Body',
+      '#default_value' => variable_get($key, ''),
+      '#wysiwyg' => false
+    );
+    $key = crlt_certificate_key($index, 'verifier');
+    $form[$key] = array(
+      '#type' => 'textarea',
+      '#title' => 'Verifier',
+      '#default_value' => variable_get($key, ''),
+      '#wysiwyg' => false
+    );
+    $key = crlt_certificate_key($index, 'agreement');
+    $form[$key] = array(
+      '#type' => 'textarea',
+      '#title' => 'Agreement',
+      '#default_value' => variable_get($key, ''),
+      '#wysiwyg' => false
+    );
+  }
+  // Submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Save'
+  );
+  return $form;
+}
+
+/**
+ *
+ */
+function crlt_certificate_settings_form_submit($form, &$form_state) {
+  // For each certificate type, grab its "help" text and save it to the DB.  
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+  $elements = array('body', 'verifier', 'agreement');
+  foreach ($certificate_types as $index => $type) {
+    foreach($elements as $element) {
+      $key = crlt_certificate_key($index, $element);
+      variable_set($key, $form_state['values'][$key]);
+    }
+  }
+  drupal_set_message('Certificate Settings Saved!');
+}
+
+/**
+ *
+ */
+function crlt_certificate_workflow_instructions_form(&$form_state) {
+  $form = array();
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+  $states = workflow_get_states(2);
+  foreach ($certificate_types as $index => $type) {
+    $form[$index] = array('#value' => '<h2> [' . $index . '] ' . $type . '</h2>');
+    foreach ($states as $sid => $state) {
+      $key = crlt_certificate_key($index, $sid);
+      $form[$key] = array(
+        '#type' => 'textarea',
+        '#title' => $state,
+        '#default_value' => variable_get($key, ''),
+        '#wysiwyg' => false
+      );
+    }
+  }
+  // Submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Save'
+  );
+  return $form;
+}
+
+/**
+ *
+ */
+function crlt_certificate_workflow_instructions_form_submit($form, &$form_state) {
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+  $states = workflow_get_states(2);
+  foreach ($certificate_types as $index => $type) {
+    foreach($states as $sid => $state) {
+      $key = crlt_certificate_key($index, $sid);
+      $value = $form_state['values'][$key];
+      if ($value == '') { $value = $key;  }
+      variable_set($key, $value);
+    }
+  }
+  drupal_set_message('Certificate Workflow Instructions Saved!');
+}
+
+/**
+ *
+ */
+function crlt_certificate_key($element, $index) {
+  return 'crlt_certificate_' . $element .  '_' . $index;
+}
+
+/**
+ * Implementation of hook_mail().
+ */
+function crlt_certificate_mail($key, &$message, $params){
+
+  // Set the mail content type to html to send an html e-mail (optional).
+  $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
+
+  // Grab the subject and body from params and add it to the message.
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['body'];
+
+  switch ($key) {
+    case "crlt_certificate_workflow":
+      // Make other changes here if desired...
+      break;
+  }
+
+}
+
+/**
+ * Implementation of hook_workflow().
+ */
+function crlt_certificate_workflow($op, $old_sid, $sid, $node) {
+
+  // Don't do automated workflow features on the batch import(s).
+  if (arg(0) == 'batch') { return; }
+
+  global $user;
+  $account = user_load($node->uid);
+
+  // Is the user an admin?
+  $admin = FALSE;
+  if (in_array('CRLT Staff', $user->roles) || in_array('admin', $user->roles)) {
+    $admin = TRUE;
+  }
+
+  // We will load all the workflows and iterate over each so it is easier for
+  // developers to make changes to any workflow.
+  $workflows = workflow_get_all();
+  if (isset($workflows)) {
+    foreach ($workflows as $wid => $workflow) {
+      switch ($op) {
+
+        case "transition post":
+
+          // By default we won't send an e-mail, unless we determine we need to later.
+          $send = false;
+          $subject = null;
+          $body = null;
+          $recipient = null;
+          $internal = TRUE;
+
+          // Set to true to only send notifications to developer. 
+          $demo = FALSE;
+          $demo_recipient = "tyler.frankenstein@gmail.com";
+
+          if ($workflow == "CRLT Certificate Workflow" || $wid == 2) {
+
+            // Load up the workflow's states and determine
+            // the old state and the current state.
+            $worfklow_states = workflow_get_states($wid);
+            $old_state = $worfklow_states[$old_sid];
+            $current_state = $worfklow_states[$sid];
+
+            // Grab the certificate type.
+            $type = $node->field_certificate_type[0]['value'];
+
+            // Track whether or not we are dynamically updating the node's workflow state.
+            $updated_state = FALSE;
+
+            // Track whether or not there is a mentor for this certificate.
+            $mentor = FALSE;
+
+            // Track whether or not we should display the workflow link in the e-mail.
+            $show_workflow_link = TRUE;
+
+            //drupal_set_message("$node->title had its workflow changed from $old_state ($old_sid) to $current_state ($sid)");
+
+            // Possible workflow ids and state names:
+            //      - creation
+            //    6 - New Request (waiting for review)   [moves directly to this state upon creation]
+            //    7 - Needs Verification
+            //    8 - Verified / Needs Review
+            //    9 - Needs Work (revision requested)
+            //   10 - Approved
+            //   11 - Denied
+
+            // On any form, if it is moving to the "Needs Work" state (9), notify the author of the certificate.
+            if ($sid == 9) {
+              $send = true;
+              $recipient = $account->mail;
+              $show_workflow_link = FALSE;
+              $subject = variable_get('crlt_certificate_revision_requested_subject', '');
+              $body = variable_get('crlt_certificate_revision_requested', '');
+            }
+            // For form C1, C2 and D...
+            else if (in_array($type, array('C1', 'C2', 'D'))) {
+              // If the state is in "Needs Verification" (7), notify the faculty member or mentor, or
+              // if the state is in "Cancelled" (12), notify the faculty member or mentor.
+              if ($sid == 7 || ($updated_state && $node->workflow == 7) || $sid == 12 || ($updated_state && $node->workflow == 12)) {
+                $send = true;
+                // Form C1 and C2 notify the faculty member uniqname.
+                if ($type == 'C1' || $type == 'C2') {
+                  $recipient = $node->field_certificate_mail[0]['value'];
+                }
+                // Form D notifies the mentor, but the mentor will not be involved in the workflow. 
+                else if ($type == 'D') {
+                  $recipient = $node->field_certificate_mail[0]['value'];
+                  $mentor = TRUE;
+                  if (strpos($recipient, 'umich.edu') === FALSE) { $internal = FALSE; }
+                }
+                // Determine the subject and body of the message.
+                $var = null;
+                switch ($type) {
+                  case 'C1': $var = 'crlt_certificate_needs_verification_C1'; break;
+                  case 'C2': $var = 'crlt_certificate_needs_verification_C2'; break;
+                  case 'D':
+                    $var = 'crlt_certificate_needs_verification_D';
+                    if ($internal) { $var .= '_internal'; }
+                    else { $var .= '_external'; }
+                    break;
+                }
+                $subject = variable_get($var . "_subject", '');
+                $body = variable_get($var, '');
+                // Override the subject and body if the form is being cancelled.
+                if ($sid == 12 || ($updated_state && $node->workflow == 12)) {
+                  $subject .= " Cancelled";
+                  $body = "$account->profile_first_name $account->profile_last_name withdrew this item from consideration. Thank you for your time.";
+                }
+              }
+            }
+
+            // Form E has no notifications.
+            if ($type == 'E') { $send = FALSE; }
+
+            // Is the recipient internal or external to UM?
+            if (strpos($recipient, 'umich.edu') === FALSE) { $internal = FALSE; }
+
+            // Send out the e-mail, if necessary.
+            if ($send && $recipient) {
+              $msg = "An e-mail was sent to $recipient to notify them of this update.";
+              if ($demo) {
+                  $recipient = $demo_recipient;
+                  $msg .= " (demo mode, e-mail only sent to $recipient)";
+              }
+
+              // If the subject and body haven't yet been set, set them.
+              $url = crlt_site_domain();
+              if (!isset($subject)) {
+                $subject = "CRLT | Certificate - $type - $account->name";
+              }
+              // Replace the tokens in the body.
+              if ($body) {
+                // Now replace the normal tokens, and convert new lines to html breaks. 
+                $body = token_replace($body, 'node', $node);
+                $body = token_replace($body, 'user', $account);
+                $body = nl2br($body);
+                // Since there doesn't appear to be a token to render a node content,
+                // we'll manually replace the fake [node:content].
+                if (strpos($body, '[node:content]') !== FALSE) {
+                  $body = str_replace('[node:content]', node_view($node, TRUE, FALSE, FALSE), $body);
+                }
+              }
+
+              // Send out the e-mail.
+              drupal_mail(
+                'crlt_certificate',
+                'crlt_certificate_workflow',
+                $recipient,
+                language_default(),
+                array('subject' => $subject, 'body' => $body),
+                'UMGraduateTeacherCertficate@umich.edu'
+              );
+              drupal_set_message($msg);
+
+              // On form D, send out an additional notice to the user.
+              if ($type == 'D') {
+                $body = variable_get('crlt_certificate_needs_verification_user', '');
+                $body = token_replace($body, 'node', $node);
+                $body = token_replace($body, 'user', $account);
+                $body = nl2br($body);
+                drupal_mail(
+                  'crlt_certificate',
+                  'crlt_certificate_workflow',
+                  $account->mail,
+                  language_default(),
+                  array('subject' => variable_get('crlt_certificate_needs_verification_user_subject', ''), 'body' => $body),
+                  'UMGraduateTeacherCertficate@umich.edu'
+                );
+              }
+
+            }
+          }
+          break;
+
+      }
+    }
+  }
+}
+
+/**
+ *
+ */
+function crlt_certificate_cancel_form(&$form_state, $nid) {
+  $form = array();
+  $node = node_load($nid);
+  if (!$node || $node->type != 'certificate') {
+    drupal_set_message('Failed to load certificate node!', error);
+    return $form;
+  }
+  $certificate_types = crlt_field_allowed_values_list_as_array('field_certificate_type');
+  $form['instructions'] = array(
+    '#value' => '<p>Are you sure you want to cancel the certificate, ' . $certificate_types[$node->field_certificate_type[0]['value']] . ' (' . $node->title . ')?</p>'
+  );
+  $form['cancel'] = array(
+    '#type' => 'button',
+    '#value' => 'Go Back',
+    '#attributes' => array(
+      'onclick' => 'javascript: window.location = "' . crlt_site_domain() . '/node/' . $nid . '"; return false;'
+    )
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Cancel Certificate'
+  );
+  return $form;
+}
+
+/**
+ *
+ */
+function crlt_certificate_cancel_form_submit($form, &$form_state) {
+  workflow_transition(node_load(arg(3)), 12);
+}
+
+function crlt_certificate_cancel_access($nid) {
+  global $user;
+  if (in_array('admin', $user->roles) || in_array('CRLT Staff', $user->roles)) {
+    return true;
+  }
+  $node = node_load($nid);
+  if (!$node || $node->type != 'certificate' || $node->uid != $user->uid) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+function crlt_certificate_updated_time_batch() {
+  return "Batch already ran!";
+  $sql = "
+    SELECT
+      n.nid
+    FROM {node} n
+    INNER JOIN {content_type_certificate} ctc ON n.nid = ctc.nid
+    WHERE
+      n.type = 'certificate' AND 
+      n.vid = ctc.vid AND
+      ctc.field_certificate_source_value IN ('signup', 'sitemaker', 'consultation')
+    ORDER BY n.nid ASC ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_certificate_updated_time_batch_process', array($data->nid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_certificate_updated_time_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_certificate_updated_time_batch_process($nid, &$context) {
+  $last_updated = db_result(db_query("SELECT stamp FROM {workflow_node} WHERE nid = %d", $nid));
+  if ($last_updated) {
+    db_query("UPDATE {node} SET changed = %d WHERE nid = %d", $last_updated, $nid);
+  }
+  $context['message'] = t('Processing @nid', array('@nid' => $nid));
+}
+
+function crlt_certificate_updated_time_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/certificate/updated-time/batch'));
+}
+
+/**
+ * Given an node, this will return the field_certificate_term value for
+ * the academic term in which the event or consultation takes place.
+ */
+function crlt_certificate_get_term_from_node($node) {
+  $term = null;
+  $field_name = null;
+  switch ($node->type) {
+    case 'consultation': $field_name = 'field_date'; break;
+    case 'events': $field_name = 'field_event_dates'; break;
+    default: return $term; break;
+  }
+  if (isset($node->$field_name)) {
+    $dates = $node->$field_name;
+    if (isset($dates[0]['value'])) {
+      $date = $dates[0]['value'];
+      $strtotime = strtotime($date);
+      $year = date('y', $strtotime);
+      $month = date('n', $strtotime);
+      $label = null;
+      if ($month >= 1 && $month <= 4) { $label = 'Winter'; }
+      else if ($month >= 5 && $month <= 7) { $label = 'Spring/Summer'; }
+      else if ($month >= 8 && $month <= 12) { $label = 'Fall'; }
+      if ($label) {
+        $label = $year . " " . $label;
+        $term = crlt_field_allowed_value_key_from_label('field_certificate_term', $label);
+      }
+    }
+  }
+  return $term;
+}
+
+/**
+ * Given an event node, this will return the field_certificate_term value for
+ * the academic term in which the  takes place.
+ */
+function crlt_certificate_get_term_from_event($node) {
+  return crlt_certificate_get_term_from_node($node);
+}
+
+/**
+ * Given a consultation node, this will return the field_certificate_term value for
+ * the academic term in which the consultation takes place.
+ */
+function crlt_certificate_get_term_from_consultation($node) {
+  return crlt_certificate_get_term_from_node($node);
+}
+
+/**
+ * Given a label from a field_certificate_term's value, this will return the
+ * integer timestamp for the end date of that term. For example, if you send in
+ * "14 Winter" it will return the integer timestamp value for 2014-12-31.
+ * @see The "Allowed values list" on admin/content/node-type/certificate/fields/field_certificate_term
+ */
+function crlt_certificate_get_term_end_date($term) {
+  $parts = explode(' ', $term);
+  if (sizeof($parts) != 2) { return FALSE; }
+  $date = "20" . $parts[0]; // @warning - this will only work during the 21st century.
+                            // But in 2014, I don't care, my aplogies to the future
+                            // developer in outer space, sky date 2100.
+  switch ($parts[1]) {
+    case 'Winter': $date .= "-04-30"; break;
+    case 'Spring/Summer': $date .= "-07-31"; break;
+    case 'Fall': $date .= "-12-31";  break;
+  }
+  return strtotime($date);
+}
+

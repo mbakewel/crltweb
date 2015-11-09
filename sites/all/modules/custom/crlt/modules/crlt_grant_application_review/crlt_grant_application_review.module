@@ -1,0 +1,801 @@
+<?php
+/**
+ * Grant Application computed field display: All Grant Application Reviewers
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_reviewers_display( $field, $element ) {
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  if ( empty( $value ) ) { return ''; }
+  $parts = explode( ',', $value );
+  $text = "{$parts[0]}";
+  $path = "user/{$parts[3]}/grant-application-reviews";
+  $status = $parts[4] == 'incomplete' ? '<em>incomplete</em>' : $parts[4];
+  return l( $text, $path, array( 'attributes' => array(
+        'title' => "View {$parts[1]}'s application reviews"
+      ) ) ) . ' ' . $status;
+}
+
+/**
+ * Grant Application computed field: All Grant Application Reviewers
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_reviewers_compute( &$node, &$field, &$node_field ) {
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  //drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the reviewer(s), if any, for this application. Then make a CSV value
+  // for each reviewer in the form of [last-name],[first-name],[uniqname],[uid].
+  // Clear out any old values first.
+  //$node->field_grant_app_reviewers = array(array('value' => ''));
+  $node_field = NULL;
+  $reviewers = crlt_grant_application_reviews( $node->nid );
+  //drupal_set_message('<pre>' . print_r($reviewers, true) . '</pre>');
+  foreach ( $reviewers as $delta => $row ) {
+    $status = !empty( $row->node_revisions_body ) ? 'complete' : 'incomplete';
+    $values = array(
+      $row->profile_values_profile_last_name_value,
+      $row->profile_values_profile_first_name_value,
+      $row->users_name,
+      $row->users_uid,
+      $status
+    );
+    $value = implode( ',', $values );
+    //drupal_set_message($value);
+    if ( !isset( $node_field ) ) { $node_field = array(); }
+    $node_field[$delta]['value'] = $value;
+  }
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review ratings count - High
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_rated_high_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review ratings count - High
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_rated_high_compute( &$node, &$field, &$node_field ) {
+  $needle = 3; // 3 == 'High'
+  $value = 0;
+  // drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the review(s), if any, for this grant application.
+  $node_field = NULL;
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  // drupal_set_message( '<pre>' . htmlspecialchars( print_r( $reviews, true ) ) . '</pre>' );
+  foreach ( $reviews as $delta => $row ) {
+    if ( $needle == $row->node_data_field_grant_application_field_grant_application_rating_value ) {
+      ++$value;
+    }
+  }
+  if ( !isset( $node_field ) ) { $node_field = array(); }
+  // $value = sprintf('<pre>%s</pre>',htmlspecialchars(print_r(array(
+  //   'reviewers' => $reviewers,
+  //   'node' => $node,
+  //   'field' => $field,
+  //   'node_field' => $node_field,
+  // ),TRUE));
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review ratings count - Medium
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_rated_med_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review ratings count - Medium
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_rated_med_compute( &$node, &$field, &$node_field ) {
+  $needle = 2; // 2 == 'Medium'
+  $value = 0;
+  // drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the review(s), if any, for this grant application.
+  $node_field = NULL;
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  // drupal_set_message( '<pre>' . htmlspecialchars( print_r( $reviews, true ) ) . '</pre>' );
+  foreach ( $reviews as $delta => $row ) {
+    if ( $needle == $row->node_data_field_grant_application_field_grant_application_rating_value ) {
+      ++$value;
+    }
+  }
+  if ( !isset( $node_field ) ) { $node_field = array(); }
+  // $value = sprintf('<pre>%s</pre>',htmlspecialchars(print_r(array(
+  //   'reviewers' => $reviewers,
+  //   'node' => $node,
+  //   'field' => $field,
+  //   'node_field' => $node_field,
+  // ),TRUE));
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review ratings count - Low
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_rated_low_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review ratings count - Low
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_rated_low_compute( &$node, &$field, &$node_field ) {
+  $needle = 1; // 1 == 'Low'
+  $value = 0;
+  // drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the review(s), if any, for this grant application.
+  $node_field = NULL;
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  // drupal_set_message( '<pre>' . htmlspecialchars( print_r( $reviews, true ) ) . '</pre>' );
+  foreach ( $reviews as $delta => $row ) {
+    if ( $needle == $row->node_data_field_grant_application_field_grant_application_rating_value ) {
+      ++$value;
+    }
+  }
+  if ( !isset( $node_field ) ) { $node_field = array(); }
+  // $value = sprintf('<pre>%s</pre>',htmlspecialchars(print_r(array(
+  //   'reviewers' => $reviewers,
+  //   'node' => $node,
+  //   'field' => $field,
+  //   'node_field' => $node_field,
+  // ),TRUE));
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review ratings average
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_rated_avg_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review ratings average
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_rated_avg_compute( &$node, &$field, &$node_field ) {
+  $rating_sum = 0;
+  $rating_count = 0;
+  $value = 0.0;
+  // drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the review(s), if any, for this grant application.
+  $node_field = NULL;
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  foreach ( $reviews as $delta => $row ) {
+    $review_rating = $row->node_data_field_grant_application_field_grant_application_rating_value;
+
+    // Ignore unset and N/A ratings
+    if ( $review_rating > 0 ) {
+      $rating_sum += $review_rating;
+      ++$rating_count;
+    }
+  }
+  // Don't divide by 0
+  if ( $rating_count > 0 ) {
+    // Compute the average
+    $value = $rating_sum / $rating_count;
+  }
+  if ( !isset( $node_field ) ) { $node_field = array(); }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review count
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_count_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review count
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_count_compute( &$node, &$field, &$node_field ) {
+  $value = 0;
+  // drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+  // drupal_set_message('<pre>' . print_r($node_field, true) . '</pre>');
+
+  // Grab the review(s), if any, for this grant application.
+  $node_field = NULL;
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if ( !isset( $node_field ) ) { $node_field = array(); }
+  $node_field[0]['value'] = count( $reviews );
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 1 Reviewer name
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_1_name_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 1 Reviewer name
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_1_name_compute( &$node, &$field, &$node_field ) {
+  $idx = 0; // 0 == first review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its reviewer name values
+    $value = $reviews[$idx]->profile_values_profile_first_name_value;
+    $value .= ' ';
+    $value .= $reviews[$idx]->profile_values_profile_last_name_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 1 Rating
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_1_rating_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 1 Rating
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_1_rating_compute( &$node, &$field, &$node_field ) {
+  $idx = 0; // 0 == first review 
+  $value = 0; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_data_field_grant_application_field_grant_application_rating_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 1 Comment
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_1_comment_display( $field, $element ) {
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 1 Comment
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_1_comment_compute( &$node, &$field, &$node_field ) {
+  $idx = 0; // 0 == first review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_revisions_body;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 2 Reviewer name
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_2_name_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 2 Reviewer name
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_2_name_compute( &$node, &$field, &$node_field ) {
+  $idx = 1; // 1 == second review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its reviewer name values
+    $value = $reviews[$idx]->profile_values_profile_first_name_value;
+    $value .= ' ';
+    $value .= $reviews[$idx]->profile_values_profile_last_name_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 2 Rating
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_2_rating_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 2 Rating
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_2_rating_compute( &$node, &$field, &$node_field ) {
+  $idx = 1; // 1 == second review 
+  $value = 0; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_data_field_grant_application_field_grant_application_rating_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 2 Comment
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_2_comment_display( $field, $element ) {
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 2 Comment
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_2_comment_compute( &$node, &$field, &$node_field ) {
+  $idx = 1; // 1 == second review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_revisions_body;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 3 Reviewer name
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_3_name_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 3 Reviewer name
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_3_name_compute( &$node, &$field, &$node_field ) {
+  $idx = 2; // 2 == third review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its reviewer name values
+    $value = $reviews[$idx]->profile_values_profile_first_name_value;
+    $value .= ' ';
+    $value .= $reviews[$idx]->profile_values_profile_last_name_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 3 Rating
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_3_rating_display( $field, $element ) {
+  // drupal_set_message('<pre>' . print_r($field, true) . '</pre>');
+
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : 0;
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 3 Rating
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_3_rating_compute( &$node, &$field, &$node_field ) {
+  $idx = 2; // 2 == third review 
+  $value = 0; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_data_field_grant_application_field_grant_application_rating_value;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Grant Application computed field display: Grant Application Review 3 Comment
+ *
+ * @param unknown $field
+ * @param unknown $element
+ * @return string
+ */
+function computed_field_field_grant_app_review_3_comment_display( $field, $element ) {
+  $value = isset( $element['#item']['value'] ) ? $element['#item']['value'] : '';
+  return $value;
+}
+
+/**
+ * Grant Application computed field: Grant Application Review 3 Comment
+ *
+ * @param unknown $node
+ * @param unknown $field
+ * @param unknown $node_field
+ */
+function computed_field_field_grant_app_review_3_comment_compute( &$node, &$field, &$node_field ) {
+  $idx = 2; // 2 == third review 
+  $value = ''; // Default value, if desired index doesn't exist
+  // Grab the review(s), if any, for this grant application.
+  $node_field = $node_field = array();
+  $reviews = crlt_grant_application_reviews( $node->nid );
+  if(isset($reviews[$idx])) {
+    // Review with this index exists, use its rating value
+    $value = $reviews[$idx]->node_revisions_body;
+  }
+  $node_field[0]['value'] = $value;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_grant_application_review_menu() {
+  $items = array();
+  /*$items['user/%/grant-application-reviews'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Grant Application Reviews',
+    'title callback' => 'crlt_grant_application_reviews_user_title',
+    'title arguments' => array(1),
+    'page callback' => 'crlt_grant_application_reviews_user_page',
+    'page arguments' => array(1),
+    'access callback' => 'crlt_grant_application_reviews_user_access',
+    'access arguments' => array(1),
+    'file' => 'crlt_grant_application_review.pages.inc'
+  );*/
+  return $items;
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function crlt_grant_application_review_nodeapi( &$node, $op, $a3 = NULL, $a4 = NULL ) {
+
+  // Skip all other content types.
+  if ( $node->type != 'grant_application_review' ) { return; }
+
+  // Whenever an application review is inserted, updated or deleted, force an
+  // update on the corresponding grant application so it's computed field is
+  // updated.
+  switch ( $op ) {
+  case 'insert':
+  case 'update':
+  case 'delete':
+    $application = node_load( $node->field_grant_application[0]['nid'] );
+    node_save( $application );
+    drupal_set_message( 'Updated application (' . $application->title . ') after "' . $op . '" of ' . $node->title );
+    break;
+  }
+
+}
+
+/**
+ *
+ */
+function crlt_grant_application_reviews_user_title( $uid ) {
+  $account = user_load( $uid );
+  $name = $account->profile_first_name . ' ' . $account->profile_last_name;
+  return "$name's Grant Application Reviews";
+}
+
+/**
+ * Access callback form user/%/grant-application-reviews
+ */
+function crlt_grant_application_reviews_user_access( $uid ) {
+  if ( crlt_grant_admin() ) { return TRUE; }
+}
+
+/**
+ * Given a grant application node id, the list of current reviewer user ids (if
+ * any), the academic for the application and the type of the grant, this will
+ * return a widget that can be used to assign reviewers to the application.
+ */
+function crlt_grant_application_review_assignment_widget( $nid, $uids, $year, $grant_type ) {
+  $destination = drupal_get_destination();
+  $markup = '<h2>Available reviewers</h2>';
+
+  // Grab a listing of possible reviewers.
+  $reviewers = crlt_grant_application_reviewers();
+  //drupal_set_message('<pre>' . print_r($reviewers, true) . '</pre>');
+
+  // Set aside all the reviewer user ids, and prep an associative array for each
+  // that can house important data about them.
+  $users = array();
+  $all_uids = array();
+  foreach ( $reviewers as $delta => $row ) {
+    $users[$row->uid] = array( 'uid' => $row->uid );
+    $all_uids[] = $row->uid;
+  }
+  //drupal_set_message('<pre>' . print_r($uids, true) . '</pre>');
+
+  // Grab a count of how many reviews each reviewer is currently assigned to
+  // for this academic year and extract their counts.
+  $sql = "
+    SELECT
+      count(n.uid) as application_count,
+      n.nid,
+      n.title,
+      n.vid,
+      n.uid
+    FROM {node} n
+    INNER JOIN {content_type_grant_application_review} ctgar
+      ON n.nid = ctgar.nid
+    INNER JOIN {content_type_grant_application} ctga
+      ON ctgar.field_grant_application_nid = ctga.nid
+    INNER JOIN {node} n2
+      ON ctga.nid = n2.nid
+    WHERE
+      n.type = 'grant_application_review' AND
+      n.uid IN (%s) AND
+      ctga.field_grant_application_year_value = %d AND
+      n.vid = ctgar.vid AND
+      n2.vid = ctga.vid
+    GROUP BY n.uid ";
+  $results = db_query( $sql, implode( ',', $all_uids ), $year );
+  while ( $data = db_fetch_object( $results ) ) {
+    $users[$data->uid]['application_count'] = $data->application_count;
+  }
+  //drupal_set_message('<pre>' . print_r($users, true) . '</pre>');
+
+  // Grab a count of how many reviews each reviewer is currently assigned to
+  // for this academic year and grant type, then extract their counts.
+  $sql = "
+    SELECT
+      count(n.uid) as application_count_by_type,
+      n.nid,
+      n.title,
+      n.vid,
+      n.uid
+    FROM {node} n
+    INNER JOIN {content_type_grant_application_review} ctgar
+      ON n.nid = ctgar.nid
+    INNER JOIN {content_type_grant_application} ctga
+      ON ctgar.field_grant_application_nid = ctga.nid
+    INNER JOIN {content_type_grant} ctg
+      ON ctga.field_grant_nid = ctg.nid
+    INNER JOIN {node} n2
+      ON ctga.nid = n2.nid
+    INNER JOIN {node} n3
+      ON ctg.nid = n3.nid
+    WHERE
+      n.type = 'grant_application_review' AND
+      n.uid IN (%s) AND
+      ctga.field_grant_application_year_value = %d AND
+      n.vid = ctgar.vid AND
+      n2.vid = ctga.vid AND
+      n3.vid = ctg.vid AND
+      ctg.field_grant_type_value = '%s'
+    GROUP BY n.uid ";
+  $results = db_query( $sql, implode( ',', $all_uids ), $year, $grant_type );
+  while ( $data = db_fetch_object( $results ) ) {
+    $users[$data->uid]['application_count_by_type'] = $data->application_count_by_type;
+  }
+  //drupal_set_message('<pre>' . print_r($users, true) . '</pre>');
+
+  // Render a table full of reviewers with various controls for each.
+  $header = array( '&nbsp;', 'Name', '# of reviews in ' . $year, '# of reviews in ' . $year . ' for ' . $grant_type );
+  $rows = array();
+  foreach ( $reviewers as $delta => $row ) {
+    $uid = $row->uid;
+    $name = $row->users_name;
+    $first_name = $row->profile_values_profile_first_name_value;
+    $last_name = $row->profile_values_profile_last_name_value;
+    $mail = $row->users_mail;
+    $element = array(
+      '#id' => 'edit-reviewer-' . $delta,
+      '#name' => 'reviewer_' . $delta,
+      '#return_value' => '',
+      '#value' => '',
+      '#attributes' => array(
+        'class' => 'crlt_grant_application_reviewer',
+        'onclick' => 'crlt_grant_application_reviewer_click(this)',
+        'uid' => $uid,
+        'nid' => $nid
+      ),
+    );
+    if ( in_array( $uid, $uids ) ) {
+      $element['#attributes']['checked'] = 'checked';
+    }
+    $application_count =
+      isset( $users[$uid]['application_count'] ) ?
+      $users[$uid]['application_count'] : 0;
+    $application_count_by_type =
+      isset( $users[$uid]['application_count_by_type'] ) ?
+      $users[$uid]['application_count_by_type'] : 0;
+    $rows[] = array(
+      theme( 'checkbox', $element ),
+      l(
+        $last_name . ', ' . $first_name,
+        "user/{$uid}/grant-application-reviews",
+        array( 'attributes' => array( 'title' => "View $first_name's Application Reviews" ) )
+      ) . " ({$row->users_name})",
+      $application_count,
+      $application_count_by_type
+    );
+  }
+  $markup .= theme( 'table', $header, $rows );
+  return $markup;
+}
+
+/**
+ * VIEWS HELPERS
+ */
+
+/**
+ * This will return a listing of all reviewers.
+ */
+function crlt_grant_application_reviewers() {
+  return views_get_view_result( 'crlt_grant_application_reviewers', NULL );
+}
+
+/**
+ * Given a grant application node id, this will return the Grant Application
+ * Reviews that reference the grant application.
+ */
+function crlt_grant_application_reviews( $nid ) {
+  return views_get_view_result( 'crlt_grant_application_reviews', NULL, $nid );
+}
+
+/**
+ * Given a user id, this will return the Grant Applications they are assigned to
+ * (aka author of).
+ */
+function crlt_grant_application_reviews_user( $uid ) {
+  drupal_set_message( 'crlt_grant_application_reviews_user - deprecated?' );
+  return views_get_view_result( 'crlt_grant_app_reviews_user', NULL, $uid );
+}

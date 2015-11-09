@@ -1,0 +1,703 @@
+<?php
+// $Id: webform_to_node.module
+
+/**
+ * Returns the user id for the GTC user.
+ */
+function webform_to_node_get_gtc_uid() {
+  return db_result(db_query("SELECT uid FROM {users} WHERE name = 'gtcs-2013'"));
+}
+
+function webform_to_node_form_alter(&$form, $form_state, $form_id) {
+  switch ($form_id) {
+    case 'webform_client_form_3' :
+    array_push($form['#submit'], 'webform_to_node_create_node_msf');
+    break;
+    case 'webform_client_form_489' :
+    array_push($form['#submit'], 'webform_to_node_create_node_tp');
+    break;
+    case 'webform_client_form_468' :
+    array_push($form['#submit'], 'webform_to_node_create_node_course_planning');
+    break;
+    case 'webform_client_form_486' :
+    array_push($form['#submit'], 'webform_to_node_create_node_instructional_strategies');
+    break;
+    case 'webform_client_form_57812' :
+    array_push($form['#submit'], 'webform_to_node_create_node_teach_tech');
+    break;
+    case 'webform_client_form_487' :
+    array_push($form['#submit'], 'webform_to_node_create_node_testing_and_grading');
+    break;
+    case 'webform_client_form_488' :
+    array_push($form['#submit'], 'webform_to_node_create_node_student_evaluations');
+    break;
+    case 'webform_client_form_490' :
+    array_push($form['#submit'], 'webform_to_node_create_node_other');
+    break;
+    case 'webform_client_form_58251' :
+    array_push($form['#submit'], 'webform_to_node_create_node_other_with_visit');
+    break;
+    case 'webform_client_form_78984' :
+    array_push($form['#submit'], 'webform_to_node_create_node_snre_midterm_survey');
+    break;
+  }
+}
+
+function webform_to_node_create_node_msf(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_3' :
+//Custom data for MSFs    
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 3;
+  	$node->title = 'MSF';
+  	$node->body = $data[9];
+  	$node->field_consult_type[0]['value'] =  'Midterm Student Feedback';
+  	$node->field_client_department[0]['value'] =  $data[22];
+  	$node->field_gtc_points[0]['value'] = 2;
+  	$node->field_course_number[0]['value'] = $data[2];
+  	$node->field_msf_preferred_dates[0]['value'] =  "class meets: $data[6]; preferred dates: $data[7]; location: $data[8]";
+  	$node->field_num_students[0]['value'] =  $data[5];
+    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+
+function webform_to_node_create_node_tp(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff.
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+
+  // If the "Instructor Status" component is set to "Graduate Student", then set
+  // the consultation service provider equal to the GTC user account id. Also,
+  // if the current user does not have their Rank profile field set, set it as
+  // a graduate student.
+  if ($data[3] == 'GSI' || $data[3] == 'PD') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+    if (!isset($original_user->Rank) || empty($original_user->Rank)) {
+      $fields = array('Rank' => 'Graduate Student');
+      crlt_user_save($original_user, $fields);
+    }
+  }
+  $webform_nid = 489;
+  $node->title = 'Teaching Philosophy';
+  $node->body = $data[5];
+  $node->field_consult_type[0]['value'] =  'Teaching Consultation - Teaching Philosophy';
+  $node->field_client_department[0]['value'] =  $data[12];
+  $node->field_gtc_points[0]['value'] = 1;
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+  
+  // Set the consultation node's field_consultation_tp_cert if the
+  // "Is this request for the Graduate Teacher Certificate?" component value on
+  // the webform is set to 'yes'.
+  if ($data[13] == 'yes') {
+    $node->field_consultation_tp_cert = array(array('value' => 1));
+  }
+  //drupal_set_message('<pre>' . print_r($node, true) . '</pre>');
+
+  // Save the node.
+  node_save($node);
+
+  // Set the user state back to the original.
+  $user = $original_user;
+  
+}
+
+function webform_to_node_create_node_course_planning(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_468' :
+//Custom for Course Planning:
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 468;
+  	$node->title = 'Course Planning';
+  	$node->body = "$data[8]; <br />
+  	Course department and number: $data[5]; <br />
+  	Term you will teach this course: $data[6]; <br />
+  	Anticipated number of students: $data[7]";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Course Planning';
+  	$node->field_client_department[0]['value'] =  $data[14];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+function webform_to_node_create_node_instructional_strategies(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_486' :
+//Custom for Instructional Strategies:
+  if ($data[2] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 486;
+  	$node->title = 'Instructional Strategies';
+  	$node->body = "$data[4]; <br />
+  	Course number: $data[3]; <br />";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Instructional Strategies';
+  	$node->field_client_department[0]['value'] =  $data[10];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] = $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+function webform_to_node_create_node_teach_tech(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_57812' :
+//Custom for Teaching with Technology:
+  if ($data[2] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 57812;
+  	$node->title = 'Teaching with Technology';
+  	$node->body = "$data[4]; <br />
+  	Course number: $data[3]; <br />";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Teaching with Technology';
+  	$node->field_client_department[0]['value'] =  $data[10];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+function webform_to_node_create_node_testing_and_grading(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_487' :
+//Custom for Testing and Grading:
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 487;
+  	$node->title = 'Testing and Grading';
+  	$node->body = "$data[5]; <br />
+  	Course number: $data[4]; <br />";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Testing and Grading';
+  	$node->field_client_department[0]['value'] =  $data[10];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+function webform_to_node_create_node_student_evaluations(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_487' :
+//Custom for Student Evaluations:
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 488;
+  	$node->title = 'Student Evaluations';
+  	$node->body = "$data[7]";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Student Evaluations';
+  	$node->field_client_department[0]['value'] =  $data[12];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+
+function webform_to_node_create_node_other(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_490' :
+//Custom for Other:
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 490;
+  	$node->title = 'Other';
+  	$node->body = "$data[4]";
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Other';
+  	$node->field_client_department[0]['value'] =  $data[10];
+  	$node->field_gtc_points[0]['value'] = 1;
+  	    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+
+function webform_to_node_create_node_snre_midterm_survey(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_58251' :
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  	$webform_nid = 78984;
+  	$node->title = 'SNRE Midterm Survey Consultation';
+  	$node->body = $data[9];
+  	$node->field_consult_type[0]['value'] =  'Consultation';
+  	$node->field_client_department[0]['value'] =  '358';
+  	$node->field_gtc_points[0]['value'] = 1;
+  	$node->field_course_number[0]['value'] = $data[2];
+  	$node->field_msf_preferred_dates[0]['value'] =  "survey adminstered: $data[22]; preferred dates: $data[7]";
+  	$node->field_num_students[0]['value'] =  $data[5];
+    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}
+
+function webform_to_node_create_node_other_with_visit(&$form, &$form_state, $form_id) {
+  // Load all of the data submitted via the webform into a keyed array ($data)
+  $data = array();
+  foreach ($form_state['values']['submitted'] as $key => $value) {
+    $data[$key] = $value;
+    //drupal_set_message("key $key value $value", $type = 'status'); 
+  }
+
+  // The node_save() function (called later in this function) call
+  // node_access_check, which means that anonymous calls to this function will
+  // not be successful. Top get around this, we load the CRLT _webform_node user
+  // while executing this function, then restore the user back to the original 
+  // state at the end of the function.
+  
+  global $user;
+  global $base_url;
+  $original_user = $user;
+  $user = user_load(59908);
+
+  // Initialize the new node with default stuff
+  $node = new stdClass();
+  $node->type = 'consultation';
+  $node->created = time();
+  $node->changed = $node->created;
+  $node->status = 1;
+  $node->promote = 0;
+  $node->sticky = 0;
+  $node->format = 1;
+  $node->uid = $user->uid;
+  $node->field_status[0]['value'] = 'New Request';
+  $node->field_num_contacts[0]['value'] =  1;
+  $node->field_annual_report_ind[0]['value'] =  'No';
+  $node->field_client[0]['uid'] =  $original_user->uid;
+// drupal_set_message("formid = $form['form_id']", $type = 'status'); 
+  //form specific processing
+  //switch ($form_id) {
+    //case 'webform_client_form_58251' :
+//Custom data for Consults with videotaping/classroom visits    
+  if ($data[3] == 'GSI') {
+    $node->field_consultation_serv_provider[0]['uid'] = webform_to_node_get_gtc_uid();
+  }
+  	$webform_nid = 58251;
+  	$node->title = 'Other Consultation with Classroom Visit or Videotaping';
+  	$node->body = $data[9];
+  	$node->field_consult_type[0]['value'] =  'Teaching Consultation - Video Taping';
+  	$node->field_client_department[0]['value'] =  $data[22];
+  	$node->field_gtc_points[0]['value'] = 2;
+  	$node->field_course_number[0]['value'] = $data[2];
+  	$node->field_msf_preferred_dates[0]['value'] =  "class meets: $data[6]; preferred dates: $data[7]; location: $data[8]";
+  	$node->field_num_students[0]['value'] =  $data[5];
+    	//break;
+  //}
+
+  $query = ("SELECT sid FROM {webform_submitted_data} WHERE nid=%d ORDER BY sid DESC Limit 1");
+  $res = db_query($query, $webform_nid);
+  $row = db_fetch_object($res);
+  $sid = $row->sid;
+  $node->field_req_url[0]['title'] =  'Link to Request';
+  $node->field_req_url[0]['url'] =  $base_url.'/node/'.$webform_nid.'/submission/'.$sid;
+
+  //Save the node
+  node_save($node);
+
+  //Set the user state back to the original
+  $user = $original_user;
+}

@@ -1,0 +1,224 @@
+$view = new view;
+$view->name = 'Grants';
+$view->description = 'Grants view test';
+$view->tag = 'crlt-grants';
+$view->base_table = 'node';
+$view->core = 6;
+$view->api_version = '2';
+$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+$handler = $view->new_display('default', 'Defaults', 'default');
+$handler->override_option('fields', array(
+  'title' => array(
+    'label' => 'Grant',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 1,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 1,
+    'exclude' => 0,
+    'id' => 'title',
+    'table' => 'node',
+    'field' => 'title',
+    'relationship' => 'none',
+  ),
+  'field_grant_primary_goals_value' => array(
+    'label' => 'Primary goals',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 0,
+    'label_type' => 'widget',
+    'format' => 'default',
+    'multiple' => array(
+      'group' => TRUE,
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_reversed' => FALSE,
+    ),
+    'exclude' => 0,
+    'id' => 'field_grant_primary_goals_value',
+    'table' => 'node_data_field_grant_primary_goals',
+    'field' => 'field_grant_primary_goals_value',
+    'relationship' => 'none',
+  ),
+  'field_grant_application_due_date_value' => array(
+    'label' => 'Application Due Date',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 0,
+    'label_type' => 'widget',
+    'format' => 'default',
+    'multiple' => array(
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_to' => '',
+      'group' => TRUE,
+    ),
+    'repeat' => array(
+      'show_repeat_rule' => '',
+    ),
+    'fromto' => array(
+      'fromto' => 'both',
+    ),
+    'exclude' => 0,
+    'id' => 'field_grant_application_due_date_value',
+    'table' => 'node_data_field_grant_application_due_date',
+    'field' => 'field_grant_application_due_date_value',
+    'relationship' => 'none',
+  ),
+  'field_grant_maximum_budget_value' => array(
+    'label' => 'Maximum Grant Amount',
+    'alter' => array(
+      'alter_text' => 0,
+      'text' => '',
+      'make_link' => 0,
+      'path' => '',
+      'absolute' => 0,
+      'link_class' => '',
+      'alt' => '',
+      'rel' => '',
+      'prefix' => '',
+      'suffix' => '',
+      'target' => '',
+      'help' => '',
+      'trim' => 0,
+      'max_length' => '',
+      'word_boundary' => 1,
+      'ellipsis' => 1,
+      'html' => 0,
+      'strip_tags' => 0,
+    ),
+    'empty' => '',
+    'hide_empty' => 0,
+    'empty_zero' => 0,
+    'hide_alter_empty' => 1,
+    'link_to_node' => 0,
+    'label_type' => 'custom',
+    'format' => 'default',
+    'multiple' => array(
+      'group' => TRUE,
+      'multiple_number' => '',
+      'multiple_from' => '',
+      'multiple_reversed' => FALSE,
+    ),
+    'exclude' => 0,
+    'id' => 'field_grant_maximum_budget_value',
+    'table' => 'node_data_field_grant_maximum_budget',
+    'field' => 'field_grant_maximum_budget_value',
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('filters', array(
+  'type' => array(
+    'operator' => 'in',
+    'value' => array(
+      'grant' => 'grant',
+    ),
+    'group' => '0',
+    'exposed' => FALSE,
+    'expose' => array(
+      'operator' => FALSE,
+      'label' => '',
+    ),
+    'id' => 'type',
+    'table' => 'node',
+    'field' => 'type',
+    'relationship' => 'none',
+  ),
+));
+$handler->override_option('access', array(
+  'type' => 'none',
+));
+$handler->override_option('cache', array(
+  'type' => 'none',
+));
+$handler->override_option('title', 'CRLT Grants');
+$handler->override_option('header', 'CRLT sponsors competitions for grants to enhance teaching and learning at the University of Michigan. To obtain information about these grants, review the short descriptions provided on this page and click on the individual grant name for more details about each one, including application guidelines. The grants competitions are open to eligible members of the Ann Arbor campus of the University only.
+
+All CRLT grant proposals are peer-reviewed by UM faculty.
+
+CRLT is also pleased to co-sponsor the new Faculty Communities for Inclusive Teaching initiative with the office of the Vice Provost for Equity, Inclusion and Academic Affairs. For more information or to apply to that program, visit <a href="dev.crlt.umich.edu/FCIT">dev.crlt.umich.edu/FCIT</a>.
+
+For other funding sources see: Beyond CRLT Grants: Instructional Funds and Grants Available at UM');
+$handler->override_option('header_format', '2');
+$handler->override_option('header_empty', 0);
+$handler->override_option('style_plugin', 'table');
+$handler = $view->new_display('page', 'Page', 'page_1');
+$handler->override_option('path', 'CRLT_Grants');
+$handler->override_option('menu', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'primary-links',
+));
+$handler->override_option('tab_options', array(
+  'type' => 'none',
+  'title' => '',
+  'description' => '',
+  'weight' => 0,
+  'name' => 'navigation',
+));

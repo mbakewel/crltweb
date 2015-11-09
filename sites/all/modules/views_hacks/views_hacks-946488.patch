@@ -1,0 +1,27 @@
+diff --git a/views_hacks/views_filters_reset/views_filters_reset.module b/views_hacks/views_filters_reset/views_filters_reset.module
+index dea502b..3550788 100644
+--- a/views_hacks/views_filters_reset/views_filters_reset.module
++++ b/views_hacks/views_filters_reset/views_filters_reset.module
+@@ -10,13 +10,18 @@ function views_filters_reset_form_views_exposed_form_alter(&$form, &$form_state)
+   if (empty($enabled_views[$form_state['view']->name])) {
+     return;
+   }
+-
++  
+   drupal_add_js(drupal_get_path('module', 'views_filters_reset') . '/views_filters_reset.js');
+   drupal_add_js('misc/jquery.form.js');
+-
++  
++  // If the reset button was pushed, remove all preset inputs to the form.
++  if ($form_state['input']['op'] == t('Reset')) {
++    unset($form_state['input']);
++  }
++  
+   $form['reset'] = array(
+-    '#type' => 'markup',
+-    '#value' => '<input '. drupal_attributes(array('id' => 'edit-reset', 'type' => 'button', 'value' => t('Reset'), 'class' => 'form-submit')) .' />',
++    '#type' => 'submit',
++    '#value' => t('Reset'),
+   );
+   static $forms = array();
+   if (!isset($forms[$form['#id']])) {

@@ -1,0 +1,303 @@
+<?php
+
+/**
+ * Implements hook_init().
+ */
+function crlt_init() {
+  drupal_add_css(drupal_get_path('module', 'crlt') . '/crlt.css');
+}
+
+/**
+ * Implements hook_menu().
+ */
+/*function crlt_menu() {
+  $items = array();
+  return $items;
+}*/
+
+/**
+ * Implements hook_form_alter().
+ */
+function crlt_form_alter(&$form, &$form_state, $form_id) {
+
+  global $user;
+
+  /*if (in_array('admin', $user->roles)) {
+    drupal_set_message($form['#id']);
+    drupal_set_message($form_id);
+    //drupal_set_message('<pre>' . print_r($form, true) . '</pre>');
+  }*/
+
+  // Attach an after build handler.
+  $form['#after_build'][] = 'crlt_form_after_build';
+}
+
+/**
+ * An after build form handler.
+ */
+function crlt_form_after_build($form, &$form_state) {
+  if ($form['#id'] == 'node-form' && $form['type']['#value'] == 'consultation') {
+    // The 'Annual Report Information' fieldset weight is colliding with the client manager weight,
+    // move the annual report fieldset up one. Note, this now makes it collide with the 'gtc details'
+    // fieldset, but having those reversed is OK.
+    if ($form['group_annual_report_info']['#weight'] == $form['field_client_crlt_widget']['#weight']) {
+      $form['group_annual_report_info']['#weight'] -= 1;
+    }
+  }
+  // Hide the webform components and submit button from nodes of type 'events'.
+  else if (isset($form['#node']) && $form['#node']->type == 'events' && strpos($form['#id'], 'webform-client-form') !== false) {
+    $form['submitted']['#access'] = FALSE;
+    $form['actions']['submit']['#access'] = FALSE;
+  }
+  if ($form['#id'] == 'signup-edit-form') {
+    // I tried many different techniques, but I can't get a submit handler
+    // to fire on the signup edit form. Therefore if a user edit's their signup
+    // their profile fields will not be updated.
+    //array_unshift($form['elements']['save']['#submit'], 'crlt_signup_form_submit');
+  }
+  return $form;
+}
+
+/**
+ * Given a user account and profile fields, this will save the user account and fields.
+ * Returns true if the save is successful, false otherwise.
+ */
+function crlt_user_save($account, $fields) {
+  if (user_save($account, $fields)) {
+    // It appears the profile field values only get saved in the user table, but
+    // not in the profile_values table. So we need to save them manually.
+    // https://api.drupal.org/api/drupal/modules!profile!profile.module/function/profile_save_profile/6
+    foreach($fields as $name => $value) {
+      if (in_array($name, array('uid', 'name', 'mail'))) { continue; }
+      $fid = db_result(db_query("SELECT fid FROM {profile_fields} WHERE name = '%s'", $name));
+      if (!$fid) { continue; }
+      db_query("DELETE FROM {profile_values} WHERE fid = %d AND uid = %d", $fid, $account->uid);
+      db_query("INSERT INTO {profile_values} (fid, uid, value) VALUES (%d, %d, '%s')", $fid, $account->uid, $value);
+    }
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Returns the current site domain with http or https prepended to it.
+ */
+function crlt_site_domain() {
+  $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+  $domainName = $_SERVER['HTTP_HOST'];
+  return $protocol.$domainName;
+}
+
+/**
+ * Given a MySQL query that grabs all columns in the profile_fields table, using
+ * any WHERE claush you wish, this will load up those profile fields and
+ * return an associative array of form elements that can be used on a form. If no
+ * profile fields are generated, it returns false. You may optionally pass in
+ * a user account object to use that account's profile field default values,
+ * otherwise the values will default to that of the current logged in user. To not
+ * use the default values of the logged in user, pass in false for the $account.
+ */
+function crlt_generate_user_profile_field_form_elements($sql, $account = null) {
+  $elements = array();
+  $results = db_query($sql);
+  if ($account === false) {
+  }
+  else if (!$account) { 
+    global $user;
+    $account = $user;
+  }
+  while ($data = db_fetch_object($results)) {
+    // Determine if the element is required. By default we listen to the
+    // setting on the actual profile field, except on the 'Bulk Signup Users' form,
+    // and the admin signup user form, then they will never be required. 
+    $required = $data->required ? true : false;
+    if ($account === false) {
+      $required = false;
+    }
+    // Now build the element.
+    $elements[$data->name] = array(
+      '#title' => $data->title,
+      '#type' => $data->type,
+      '#required' => $required,
+      '#description' => $data->explanation,
+      '#default_value' => $user->{$data->name} ? $user->{$data->name} : null
+    );
+    if ($data->type == 'selection') {
+      $elements[$data->name]['#type'] = 'select';
+      $options = array();
+      foreach(preg_split("/((\r?\n)|(\r\n?))/", $data->options) as $line){
+        $text = $line;
+        if (!$text) { $text = '- Please select -'; }
+        $options[$line] = $text;
+      }
+      if (!empty($options)) {
+        $elements[$data->name]['#options'] = $options;
+      }
+    }
+  }
+  if (empty($elements)) {
+    return FALSE;
+  }
+  return $elements;
+}
+
+/**
+ * Given a field name, this will return the allowed value list as an
+ * associative array with the keys and values specified on the field's
+ * allowed values list.
+ */
+function crlt_field_allowed_values_list_as_array ($field_name) {
+  $sql = " SELECT global_settings FROM content_node_field WHERE field_name = '%s' ";
+  $global_settings = unserialize(db_result(db_query($sql,$field_name)));
+  $allowed_values = $global_settings['allowed_values'];
+  $allowed_values_explode = explode("\n",$allowed_values);
+  $allowed_values = array();
+  foreach ($allowed_values_explode as $allowed_value) {
+    $allowed_value_explode = explode("|",$allowed_value);
+    if (sizeof($allowed_value_explode) == 1) {
+      $allowed_values[] = trim($allowed_value_explode[0]);
+    }
+    else {
+      $allowed_values[$allowed_value_explode[0]] = trim($allowed_value_explode[1]);
+    }
+  }
+  return $allowed_values;
+}
+
+/**
+ * Given a field name, and a label of an allowed value, this will return the key. 
+ */
+function crlt_field_allowed_value_key_from_label($field_name, $label_value) {
+  $allowed_values = crlt_field_allowed_values_list_as_array($field_name);
+  foreach($allowed_values as $key => $label) {
+    if ($label == $label_value) { return $key; }
+  }
+  return null;
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function crlt_views_pre_render(&$view) {
+  // Make modifications to the events calendar.
+  if ($view->name == 'crlt_events_calendar') {
+    // For each result in the view, determine the background color specified
+    // for the event series and package them onto the $view object so the
+    // colors will be available in the views-view--table template file on our theme. 
+    //drupal_set_message('<pre>' . print_r($view->result, true) . '</pre>');
+    $series_list = crlt_field_allowed_values_list_as_array('field_presented_by');
+    $view->crlt_event_series_bg_colors = array();
+    foreach($view->result as $row_index => $result) {
+      $index = array_search($result->node_data_field_event_planning_notes_field_presented_by_value, $series_list);
+      $view->crlt_event_series_bg_colors[$row_index] = variable_get(crlt_event_series_key('series', $index), '');
+    }
+    $flags = crlt_field_allowed_values_list_as_array('field_event_flag');
+    $view->crlt_event_flags = $flags;
+    $view->crlt_event_flag_images = array();
+    foreach ($flags as $value => $label) {
+      $index = array_search($label, $flags);
+      $src = variable_get(crlt_event_series_key('flags', $index));
+      $alt_title = $flags[$value];
+      $view->crlt_event_flag_images[$value] = array(
+        'src' => $src,
+        'alt_title' => $alt_title
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function crlt_views_api() {
+  return array(
+    'api' => 2, 
+  );
+}
+
+/**
+ * Implementation of hook_webform_results_access().
+ */
+function crlt_webform_results_access($node, $account = NULL) {
+  return crlt_webform_access($node, $account);
+}
+
+/**
+ * Implementation of hook_webform_submission_access().
+ */
+function crlt_webform_submission_access($node, $submission, $op = 'view', $account = NULL) {
+  return crlt_webform_access($node, $account);
+}
+
+/**
+ * Returns true if account is a value in the webform results user
+ * reference field on the webform content type.
+ *
+ * @param object $node
+ *   The webform node.
+ * @param object $account
+ *   The user account, optional. Defaults to current user.
+ *
+ * @return bool
+ *   Returns true if user is listed, false otherwise.
+ */
+function crlt_webform_access ($node, $account = NULL) {
+  global $user;
+  $account = isset($account) ? $account : $user;
+  $access = false;
+  if (isset($node->field_webform_results_access[0]['uid'])) { // Drupal 6
+    // This webform has user(s) specified for submission results access control.
+    if (user_access("administer nodes") || user_access("edit any webform content")) {
+      $access = true;
+    }
+    else {
+      // For each user specified, make sure the current user is one of them,
+      // otherwise don't show the results.
+      foreach ($node->field_webform_results_access as $i => $user_reference) {
+        if ($user_reference['uid'] == $account->uid) {
+          $access = true;
+          break;
+        }
+      }
+    }
+  }
+  return $access;
+}
+
+/**
+ * Given an optional user account (defaults to current user if no account is
+ * provided), this returns true if the account is considered a CRLT admin, false
+ * otherwise.
+ */
+function crlt_is_admin($account = null) {
+  global $user;
+  $admin = FALSE;
+  if (!$account) { $account = $user; }
+  if (
+    $account->uid != 0 &&
+    (
+      $account->uid == 1 ||
+      in_array('admin', $account->roles) ||
+      in_array('CRLT Staff', $account->roles)
+    )
+  ) { $admin = TRUE; }
+  return $admin;
+}
+
+/**
+ * A helper function to display an array of CRLT developer messages to site admins.
+ */
+function crlt_show_messages($messages) {
+  // Show messages to admins.
+  if (!empty($messages) && crlt_is_admin()) {
+    foreach ($messages as $message) {
+      $msg = $message[0];
+      $msg_type = 'status';
+      if (isset($message[1])) { $msg_type = $message[1]; }
+      drupal_set_message($msg, $msg_type);
+    }
+  }
+}
+

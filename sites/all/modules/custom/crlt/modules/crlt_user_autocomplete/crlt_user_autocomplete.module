@@ -1,0 +1,38 @@
+<?php
+/**
+ *
+ *
+ * @file If this page uses Drupal's autocomplete feature, load CRLT's Javascript
+ */
+
+/**
+ * Implementation of hook_js_alter()
+ */
+function crlt_user_autocomplete_js_alter( &$aJavascript, $sScope = 'header', &$query_string ) {
+  if ( isset( $aJavascript['module']['misc/autocomplete.js'] ) ) {
+    // drupal_set_message( '<h1>Page uses autocomplete</h1>' );
+    // Page uses autocomplete, load module javascript
+    $js_path = drupal_get_path( 'module', 'crlt_user_autocomplete' ) . '/crlt_user_autocomplete.js';
+    $aJavascript['module'][$js_path] = array( 'cache'=>1,'defer'=>null,'preprocess'=>1, );
+  } else {
+    // drupal_set_message('<h1>Page DOES NOT use autocomplete</h1>');
+  }
+  // drupal_set_message( sprintf( '<h1>3 param</h1><pre>%s
+  //   !! %s
+  //   !!!! %s</pre><hr/>',
+  //     htmlspecialchars( print_r( $aJavascript, TRUE ) ),
+  //     print_r( $sScope, TRUE ),
+  //     print_r( $query_string, TRUE )
+  //   ) );
+/*
+    watchdog(
+      'crlt_autocomplete',
+      '@sScope: <pre>@aJavascript</pre>',
+      array(
+        '@sScope'=>$sScope,
+        '@aJavascript'=>print_r($aJavascript,TRUE),
+      ), 
+      WATCHDOG_DEBUG
+    );
+*/
+}

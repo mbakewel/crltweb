@@ -1,0 +1,4 @@
+name = CRLT Consultation Migration
+description = The CRLT Consultation Migration module.
+core = 6.x
+package = Other

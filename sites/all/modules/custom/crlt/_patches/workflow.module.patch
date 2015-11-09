@@ -1,0 +1,21 @@
+diff --git a/sites/all/modules/workflow/workflow.module b/sites/all/modules/workflow/workflow.module
+index 262e20b..e2f8b8c 100644
+--- a/sites/all/modules/workflow/workflow.module
++++ b/sites/all/modules/workflow/workflow.module
+@@ -1390,7 +1390,8 @@ function workflow_actions_remove($tid, $aid) {
+  */
+ function _workflow_node_to_state($node, $sid, $comment = NULL) {
+   global $user;
+-  $node->workflow_stamp = time();
++  // CRLT PATCH.
++  if (!isset($node->workflow_stamp)) { $node->workflow_stamp = time(); }
+   if (db_result(db_query("SELECT nid FROM {workflow_node} WHERE nid = %d", $node->nid))) {
+     db_query("UPDATE {workflow_node} SET sid = %d, uid = %d, stamp = %d WHERE nid = %d", $sid, $user->uid, $node->workflow_stamp, $node->nid);
+   }
+@@ -1644,4 +1645,4 @@ function workflow_user($op, &$edit, &$account, $category = NULL) {
+       db_query("UPDATE {workflow_node_history} SET uid = 0 WHERE uid = %d", $account->uid);
+     break;
+   }
+-}
+\ No newline at end of file
++}

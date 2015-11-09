@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function crlt_event_migration_menu() {
+  $items = array();
+  $items['crlt/event/dates-batch'] = array(
+    'title' => 'Event Date Migration Batch',
+    'page callback' => 'crlt_event_date_batch',
+    'access arguments' => array('create consultation content')
+  );
+  $items['crlt/event/signup-scrub-batch'] = array(
+    'title' => 'Event Signup Scrub Batch',
+    'page callback' => 'crlt_event_signup_scrub_batch',
+    'access arguments' => array('create consultation content')
+  );
+  return $items;
+}
+
+function crlt_event_date_batch() {
+  return "BATCH ALREADY RAN!";
+  $sql = " SELECT nid FROM {node} WHERE type = 'events' ORDER BY nid ASC ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_event_date_batch_process', array($data->nid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_event_date_batch_process_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_event_date_batch_process($nid, &$context) {
+  $node = node_load($nid, NULL, TRUE);
+  // Take the start date and end date field values and place them onto
+  // the new field_event_dates field and save the node.
+  if (date('Y-m-d', strtotime($node->field_date_start[0]['value'])) != date('Y-m-d', strtotime($node->field_date_end[0]['value']))) {
+    drupal_set_message('Dates not equal: ' . l($node->title, "node/$node->nid"), 'warning');
+    return;
+  }
+  $node->field_event_dates[0]['value'] = $node->field_date_start[0]['value'];
+  $node->field_event_dates[0]['value2'] = $node->field_date_end[0]['value'];
+  //drupal_set_message(date('Y-m-d', strtotime($node->field_date_start[0]['value'])) . ' ?= ' . date('Y-m-d', strtotime($node->field_date_end[0]['value']));
+  //drupal_set_message(date('Y-m-d') . ' ?= ' . date('Y-m-d'));
+//drupal_set_message(date('Y-m-d', strtotime($node->field_date_start[0]['value'])) . " ?= " . date('Y-m-d', strtotime($node->field_date_end[0]['value'])));
+  $sql = " UPDATE content_field_event_dates SET field_event_dates_value = '" . $node->field_date_start[0]['value'] . "', field_event_dates_value2 = '" . $node->field_date_end[0]['value'] . "' WHERE nid = $node->nid AND vid = $node->vid ";
+  db_query($sql);
+  //drupal_set_message(l('Updated: ' . $node->title, "node/$node->nid"));
+  //drupal_set_message($sql);
+  $context['message'] = t('Processing @title', array('@title' => $node->title));
+}
+
+function crlt_event_date_batch_process_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/event/dates-batch'));
+}
+
+function crlt_event_signup_scrub_batch() {
+  return "Batch already ran!";
+  $sql = " SELECT sid FROM signup_log ORDER BY sid ASC ";
+  $results = db_query($sql);
+  $operations = array();
+  while ($data = db_fetch_object($results)) {
+    $operations[] = array('crlt_event_signup_scrub_process', array($data->sid));
+  }
+  $batch = array(
+    'operations' => $operations,
+    'finished' => 'crlt_event_signup_scrub_finished',
+  );
+  batch_set($batch);
+  batch_process('user');
+}
+
+function crlt_event_signup_scrub_process($sid, &$context) {
+  $sql = " SELECT * FROM signup_log WHERE sid = $sid ";
+  $result = db_query($sql);
+  $signup = db_fetch_object($result);
+  $form_data = unserialize($signup->form_data);
+  //drupal_set_message('<pre>' . print_r($form_data, true) . '</pre>');
+  $change = false;
+  if (isset($form_data['unit']) && is_numeric($form_data['unit'])) {
+    $sql = " SELECT name FROM term_data WHERE tid = " . $form_data['unit'];
+    $result = db_query($sql);
+    $term = db_fetch_object($result);
+    //drupal_set_message('<pre>' . print_r($term, true) . '</pre>');
+    if (isset($term->name)) {
+      $form_data['unit'] = $term->name;
+      $change = true;
+    }
+  }
+  if (isset($form_data['department']) && is_numeric($form_data['department'])) {
+    $sql = " SELECT name FROM term_data WHERE tid = " . $form_data['department'];
+    $result = db_query($sql);
+    $term = db_fetch_object($result);
+    //drupal_set_message('<pre>' . print_r($term, true) . '</pre>');
+    if (isset($term->name)) {
+      $form_data['department'] = $term->name;
+      $change = true;
+    }
+  }
+  if ($change) {
+    $sql = " UPDATE signup_log SET form_data = '%s' WHERE sid = %d ";
+    //drupal_set_message($sql . " ($sid)");
+    db_query($sql, serialize($form_data), $sid);
+  }
+  $context['message'] = t('Processing @sid', array('@sid' => $signup->sid));
+}
+
+function crlt_event_signup_scrub_finished($success, $results, $operations) {
+  if ($success) {
+    $message = count($results) . ' processed.';
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = 'An error occurred while processing ' . $error_operation[0] . ' with arguments :' . print_r($error_operation[0], TRUE);
+  }
+  drupal_set_message($message);
+  drupal_set_message(l('Run Batch Again', 'crlt/event/signup-scrub-batch'));
+}
+

@@ -1,0 +1,6 @@
+name = CRLT
+description = The Center for Research on Learning Technology module.
+package = Other
+core = 6.x
+scripts[] = crlt.js
+
