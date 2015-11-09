@@ -26,9 +26,6 @@ function date_token_list($type = 'all') {
     $tokens['date']['d']              = t("Date day (one or two digit)");
     $tokens['date']['dS']             = t("Date day (one or two digit) with ordinal suffix (st, nd, rd or th)");
     $tokens['date']['time']           = t("Time H:i");
-//mbakewel 9/10/12 added next 2 lines from patch at drupal.org/node/593840 #4
-    $tokens['date']['time12ampm']           = t("Time g:ia");
-    $tokens['date']['time12AMPM']           = t("Time h:iA");
 
     $tokens['date']['to-????']        = t("If the field has a to-date defined, the same tokens exist in the form: [to-????], where ???? is the normal token.");
 
@@ -66,9 +63,6 @@ function date_token_values($type, $object = NULL) {
     $tokens['d']              = !empty($date) ? date_format_date($date, 'custom', 'j') : '';
     $tokens['dS']             = !empty($date) ? date_format_date($date, 'custom', 'jS') : '';
     $tokens['time']           = !empty($date) ? date_format_date($date, 'custom', 'H:i') : '';
-//mbakewel 9/10/12 added next 2 lines from patch at drupal.org/node/593840 #4
-    $tokens['time12ampm']           = !empty($date) ? date_format_date($date, 'custom', 'g:ia') : '';
-    $tokens['time12AMPM']           = !empty($date) ? date_format_date($date, 'custom', 'h:iA') : '';
 
     if (!empty($item['value2'])) {
 
@@ -96,9 +90,6 @@ function date_token_values($type, $object = NULL) {
       $tokens['to-d']              = !empty($date) ? date_format_date($date, 'custom', 'j') : '';
       $tokens['to-dS']             = !empty($date) ? date_format_date($date, 'custom', 'jS') : '';
       $tokens['to-time']           = !empty($date) ? date_format_date($date, 'custom', 'H:i') : '';
-//tjfrank - 2014-01-27 - manual patch to allow these tokens
-      $tokens['to-time12ampm']           = !empty($date) ? date_format_date($date, 'custom', 'g:ia') : '';
-      $tokens['to-time12AMPM']           = !empty($date) ? date_format_date($date, 'custom', 'h:iA') : '';
 
     }
     return $tokens;
