@@ -2,9 +2,9 @@ name = Secure Login
 description = "Enables secure login"
 core = 6.x
 
-; Information added by drupal.org packaging script on 2013-05-25
+; Information added by drupal.org packaging script on 2013-10-01
 version = "6.x-1.x-dev"
 core = "6.x"
 project = "securelogin"
-datestamp = "1369452930"
+datestamp = "1380626972"
 
