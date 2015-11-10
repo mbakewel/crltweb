@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Allow users to make a copy of an item of content (a node) and then edit that copy.
+ */
 
 /**
  * Implementation of hook_help().
@@ -57,8 +61,7 @@ function clone_access_cloning($node) {
   $access = $access && (filter_access($node->format) && node_access('create', $node->type));
   // Make sure the user can view the original node content.
   $access = $access && node_access('view', $node);
-  // Let other modules alter this - for exmple to only allow some users
-  // to clone specific nodes or types.
+  // Let other modules alter access.
   drupal_alter("clone_access", $access, $node);
   return $access;
 }
@@ -126,6 +129,29 @@ function clone_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'value',
         '#value' => $form['#node']->clone_from_original_nid,
       );
+    }
+  }
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function clone_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
+  // Handle the core bugginess in node_object_prepare() that overwrites the
+  // publishing options.
+  if ($op == 'prepare' && isset($node->clone_from_original_nid)) {
+    if (variable_get('clone_reset_'. $node->type, FALSE)) {
+      $node_options = variable_get('node_options_'. $node->type, array('status', 'promote'));
+      // Fill in the default values.
+      foreach (array('status', 'moderate', 'promote', 'sticky', 'revision') as $key) {
+        $node->$key = in_array($key, $node_options);
+      }
+    }
+    else {
+      $original_node = node_load($node->clone_from_original_nid);
+      foreach (array('status', 'moderate', 'promote', 'sticky', 'revision') as $key) {
+        $node->$key = isset($original_node->$key) ? $original_node->$key : NULL;
+      }
     }
   }
 }

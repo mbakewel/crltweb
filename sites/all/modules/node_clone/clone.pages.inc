@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Additional functions for Node_Clone module.
+ */
 
 /**
  * Menu callback to configure module settings.
@@ -28,7 +32,7 @@ function clone_settings() {
     '#options' => array(0 => t('No'), 1 => t('Yes')),
     '#default_value' => (int) variable_get('clone_menu_links', 0),
     '#description' => t('Should any menu link for a node also be cloned?'),
-  ); 
+  );
 
   $form['publishing'] = array(
     '#type' => 'fieldset',
@@ -54,7 +58,7 @@ function clone_settings() {
     '#title' => t('Omitted content types'),
     '#default_value' => variable_get('clone_omitted', array()),
     '#options' => $types,
-    '#description' => t('Select any node types which should <em>never</em> be cloned. Typically you should will want to select here all node types for which cloning fails (e.g. image nodes).'),
+    '#description' => t('Select any node types which should <em>never</em> be cloned. In other words, all node types where cloning will fail.'),
   );
 
   return system_settings_form($form);
@@ -66,7 +70,7 @@ function clone_settings() {
 function clone_node_check($node) {
 
   $method = variable_get('clone_method', 'prepopulate');
-  
+
   switch ($method) {
     case 'save-edit':
       if (variable_get('clone_nodes_without_confirm', FALSE)) {
@@ -142,7 +146,9 @@ function clone_node_prepopulate($original_node) {
       $node->nid = NULL;
       $node->vid = NULL;
       $node->tnid = NULL;
-      $node->name = $user->name;
+      // Anyonmymous users don't have a name.
+      // @see: drupal_anonymous_user().
+      $node->name = isset($user->name) ? $user->name : NULL;
       $node->uid = $user->uid;
       $node->created = NULL;
       $node->menu = clone_node_clone_menu_link($original_node);
@@ -157,6 +163,11 @@ function clone_node_prepopulate($original_node) {
       $node->clone_from_original_nid = $original_node->nid;
       drupal_set_title(check_plain($node->title));
 
+      // @see https://www.drupal.org/node/795394 the publishing options set here
+      // are overwritten in node_object_prepare() and must be set again to the
+      // desired values in clone_nodeapi(). However, we are setting the
+      // publishing options here to the expected final values since that may be
+      // helpful for alter hooks that might be inspecting those flags.
       if (variable_get('clone_reset_'. $node->type, FALSE)) {
         $node_options = variable_get('node_options_'. $node->type, array('status', 'promote'));
         // Fill in the default values.
@@ -165,8 +176,6 @@ function clone_node_prepopulate($original_node) {
         }
       }
       // Let other modules do special fixing up.
-      // The function signature is: hook_clone_node_alter(&$node, $original_node, $method)
-      // Where $method is either 'prepopulate' or 'save-edit'.
       drupal_alter("clone_node", $node, $original_node, "prepopulate");
       // Make sure the file defining the node form is loaded.
       module_load_include('inc', 'node', 'node.pages');
@@ -189,7 +198,9 @@ function clone_node_save($nid) {
       $node->nid = NULL;
       $node->vid = NULL;
       $node->tnid = NULL;
-      $node->name = $user->name;
+      // Anyonmymous users don't have a name.
+      // @see: drupal_anonymous_user().
+      $node->name = isset($user->name) ? $user->name : NULL;
       $node->uid = $user->uid;
       $node->created = NULL;
       $node->menu = clone_node_clone_menu_link($original_node);
@@ -211,8 +222,6 @@ function clone_node_save($nid) {
         }
       }
       // Let other modules do special fixing up.
-      // The function signature is: hook_clone_node_alter(&$node, $original_node, $method)
-      // Where $method is either 'prepopulate' or 'save-edit'.
       drupal_alter("clone_node", $node, $original_node, "save-edit");
 
       node_save($node);
@@ -220,4 +229,3 @@ function clone_node_save($nid) {
     }
   }
 }
-

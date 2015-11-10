@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Views field handler for Node_Clone module.
+ */
 
 /**
 * Field handler to present a clone node link.
@@ -11,6 +15,33 @@ class views_handler_field_node_link_clone extends views_handler_field_node_link 
     $this->additional_fields['uid'] = 'uid';
     $this->additional_fields['type'] = 'type';
     $this->additional_fields['format'] = array('table' => 'node_revisions', 'field' => 'format');
+  }
+
+  /**
+   * Determine if this field can allow advanced rendering.
+   *
+   * Fields can set this to FALSE if they do not wish to allow
+   * token based rewriting or link-making.
+   */
+  function allow_advanced_render() {
+    return FALSE;
+  }
+
+  function option_definition() {
+    $options = parent::option_definition();
+
+    $options['destination'] = array('default' => 1, 'translatable' => FALSE);
+
+    return $options;
+  }
+
+  function options_form(&$form, &$form_state) {
+    parent::options_form($form, $form_state);
+    $form['destination'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Add destination query string to return to the View'),
+      '#default_value' => $this->options['destination'],
+    );
   }
 
   function render($values) {
@@ -26,6 +57,10 @@ class views_handler_field_node_link_clone extends views_handler_field_node_link 
     }
 
     $text = !empty($this->options['text']) ? $this->options['text'] : t('clone');
-    return l($text, "node/$node->nid/clone", array('query' => drupal_get_destination()));
+    $options = array();
+    if ($this->options['destination']) {
+      $options['query'] = drupal_get_destination();
+    }
+    return l($text, "node/$node->nid/clone", $options);
   }
 }
