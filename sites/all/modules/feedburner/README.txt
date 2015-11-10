@@ -1,3 +1,4 @@
+// $Id$
 
 CONTENTS OF THIS FILE
 ---------------------
@@ -97,8 +98,11 @@ HOW CAN YOU CONTRIBUTE?
 - Write a review for this module at drupalmodules.com.
   http://drupalmodules.com/module/feedburner
 
-- Help translate this module.
-  http://project.davereid.net/translate/projects/feedburner
+- Help translate this module on launchpad.net.
+  https://translations.launchpad.net/drupal-feedburner
+
+- Donate to the maintainer's replacement laptop fund to help keep development
+  active. http://blog.davereid.net/content/laptop-fund
 
 - Report any bugs, feature requests, etc. in the issue tracker.
   http://drupal.org/project/issues/feedburner

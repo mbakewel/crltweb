@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -93,8 +94,8 @@ function feedburner_menu() {
     'access arguments' => array('administer FeedBurner'),
     'file' => 'feedburner.admin.inc',
   );
-  $items['js/feedburner/autocomplete'] = array(
-    'page callback' => 'feedburner_autocomplete',
+  $items['admin/build/feedburner/autocomplete'] = array(
+    'page callback' => 'feedburner_admin_build_autocomplete',
     'type' => MENU_CALLBACK,
     'access arguments' => array('administer FeedBurner'),
     'file' => 'feedburner.admin.inc',
@@ -120,7 +121,7 @@ function feedburner_boot() {
 /**
  * Implementation of hook_url_alter_outbound() from the url_alter module.
  */
-function feedburner_url_outbound_alter(&$path, &$options, $original_path) {
+function feedburner_url_alter_outbound(&$path, &$options, $original_path) {
   static $feeds;
   
   if ($original_path == 'feedburner/url-rewrite-test') {
@@ -164,7 +165,7 @@ function feedburner_url_outbound_alter(&$path, &$options, $original_path) {
  */
 if (!function_exists('custom_url_rewrite_outbound')) {
   function custom_url_rewrite_outbound(&$path, &$options, $original_path) {
-    feedburner_url_outbound_alter($path, $options, $original_path);
+    feedburner_url_alter_outbound($path, $options, $original_path);
   }
 }
 

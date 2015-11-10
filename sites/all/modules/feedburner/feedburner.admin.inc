@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -6,7 +7,7 @@
  */
 
 function feedburner_build_overview($category) {
-  $keys = _feedburner_get_path_segment(5);
+  $keys = _feedburner_get_path_segment(6);
   $output = drupal_get_form('feedburner_build_filter_form', $category, $keys);
 
   $header = array(
@@ -116,7 +117,7 @@ function feedburner_build_filter_form_submit_reset($form, &$form_state) {
 
 
 function feedburner_burn_form() {
-  $path = _feedburner_get_path_segment(4);
+  $path = _feedburner_get_path_segment(5);
   $feedburner = db_result(db_query("SELECT feedburner FROM {feedburner} WHERE path = '%s'", $path));
 
   $form['path'] = array(
@@ -127,7 +128,7 @@ function feedburner_burn_form() {
     '#size' => 45,
     '#description' => t('Specify the existing feed on your site from which to redirect.'),
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
-    '#autocomplete_path' => 'js/feedburner/autocomplete/all',
+    '#autocomplete_path' => 'admin/build/feedburner/autocomplete/all',
   );
   $form['feedburner'] = array(
     '#type' => 'textfield',
@@ -137,7 +138,7 @@ function feedburner_burn_form() {
     '#size' => 45,
     '#description' => t('Requests to the above feed will be requested to this FeedBurner feed. This field is case-sensitive and alphanumeric.'),
     '#field_prefix' => _feedburner_construct_url(),
-    '#autocomplete_path' => 'js/feedburner/autocomplete/feedburner',
+    '#autocomplete_path' => 'admin/build/feedburner/autocomplete/feedburner',
     '#element_validate' => array('_feedburner_validate_feed'),
   );
 
@@ -174,7 +175,7 @@ function feedburner_burn_form_submit($form, &$form_state) {
 
 
 function feedburner_unburn_form() {
-  $path = _feedburner_get_path_segment(4);
+  $path = _feedburner_get_path_segment(5);
   $feed = db_result(db_query("SELECT feedburner FROM {feedburner} WHERE path = '%s'", $path));
 
   if (empty($path) || $feed === FALSE) {
@@ -377,7 +378,7 @@ function feedburner_settings_form_validate($form, &$form_state) {
 function _feedburner_get_site_feeds(&$feeds) {
   $feeds[] = array('path' => 'rss.xml', 'description' => variable_get('site_name', 'Drupal') .' frontpage feed');
   $feeds[] = array('path' => 'aggregator/feed', 'description' => 'Aggregator feed', 'module' => 'aggregator');
-  $feeds[] = array('path' => 'blog/feed', 'description' => variable_get('site_name', 'Drupal') .' blogs', 'module' => 'blog');
+  $feeds[] = array('path' => 'blog/feed', 'description' => variable_get('site_name', 'Drupal') .' blogs');
   $feeds[] = array('path' => 'crss', 'description' => variable_get('site_name', 'Drupal') .' comments', 'module' => 'commentrss');
   $feeds[] = array('path' => 'atom/feed', 'description' => variable_get('site_name', 'Drupal') .' ATOM', 'module' => 'atom');
 }
@@ -835,10 +836,9 @@ function _feedburner_get_feed_features($uri, $cache = FALSE) {
  *
  * @todo REWRITE AND REVISE!
  */
-function feedburner_autocomplete($category) {
+function feedburner_admin_build_autocomplete($category) {
   module_load_include('inc', 'feedburner', 'feedburner.admin');
-  $key = _feedburner_get_path_segment(4);
-
+  $key = _feedburner_get_path_segment(6);
   $options = array('match' => $key, 'limit' => 10, 'feedburner' => TRUE);
 
   if ($category == 'feedburner') {
