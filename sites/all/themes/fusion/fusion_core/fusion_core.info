@@ -242,9 +242,9 @@ skinr[fusion-login][scripts][] = js/jquery.overlabel.js
 skinr[fusion-login][options][1][label] = <span class="preview-text">Horizontal: puts user login block on a single line with label overlays (good for Header Top region) <span class="preview-icon" id="fusion-login-fusion-horiz-login"></span></span>
 skinr[fusion-login][options][1][class] = fusion-horiz-login
 
-; Information added by drupal.org packaging script on 2012-03-28
-version = "6.x-1.13"
+; Information added by Drupal.org packaging script on 2014-09-16
+version = "6.x-1.14"
 core = "6.x"
 project = "fusion"
-datestamp = "1332949846"
+datestamp = "1410882237"
 

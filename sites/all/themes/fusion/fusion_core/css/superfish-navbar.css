@@ -17,7 +17,7 @@
 	width:			44em; /*IE6 soils itself without this*/
 }
 .sf-navbar li li {
-	background:		#005078;
+	background:		#BDD2FF;
 	position:		relative;
 }
 .sf-navbar li li ul {
@@ -34,15 +34,13 @@
 	border:			none;
 }
 .sf-navbar li.current {
-	background:		#005078;
-	color: #fff;
+	background:		#BDD2FF;
 }
 .sf-navbar li:hover,
 .sf-navbar li.sfHover,
 .sf-navbar li li.current,
 .sf-navbar a:focus, .sf-navbar a:hover, .sf-navbar a:active {
-	background:		#005078;
-	color: #fff;
+	background:		#BDD2FF;
 }
 .sf-navbar ul li:hover,
 .sf-navbar ul li.sfHover,

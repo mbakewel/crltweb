@@ -286,7 +286,14 @@ function fusion_core_preprocess_block(&$vars) {
     $regions = fusion_core_set_regions($grid_width, $sidebar_first_width, $sidebar_last_width);
   }
 
-  // Increment block count for current block's region, add first/last position class
+  // Increment block count for current block's region, add first/last position
+  // class.
+  if (!isset($regions[$vars['block']->region])) {
+    $regions[$vars['block']->region]['count'] = 0;
+  }
+  if (!isset($regions[$vars['block']->region]['total'])) {
+    $regions[$vars['block']->region]['total'] = 0;
+  }
   $regions[$vars['block']->region]['count']++;
   $region_count = $regions[$vars['block']->region]['count'];
   $total_blocks = $regions[$vars['block']->region]['total'];
@@ -303,8 +310,14 @@ function fusion_core_preprocess_block(&$vars) {
       $width = ($grid_fixed) ? $sidebar_last_width : $grid_width;  // Sidebar width or 100% (if fluid)
     }
     else {
-      // Default block width = region width divided by total blocks, adding any extra width to last block
-      $region_width = ($grid_fixed) ? $regions[$vars['block']->region]['width'] : $grid_width;  // fluid grid regions = 100%
+      // Default block width = region width divided by total blocks, adding any
+      // extra width to last block.
+      if (!empty($grid_fixed) && isset($regions[$vars['block']->region], $regions[$vars['block']->region]['width'])) {
+        $region_width = $regions[$vars['block']->region]['width'];
+      }
+      else {
+        $region_width = $grid_width;  // fluid grid regions = 100%
+      }
       $width_adjust = (($region_count == $total_blocks) && ($region_width % $total_blocks)) ? $region_width % $total_blocks : 0;
       $width = ($total_blocks) ? floor($region_width / $total_blocks) + $width_adjust : 0;
     }
@@ -343,8 +356,8 @@ function fusion_core_preprocess_search_result(&$vars) {
   $search_zebra = ($search_zebra == 'even') ? 'odd' : 'even';
   $vars['search_zebra'] = $search_zebra;
   $result = $vars['result'];
-  $vars['url'] = check_url($result['link']);
-  $vars['title'] = check_plain($result['title']);
+  $vars['url'] = !empty($result['link']) ? check_url($result['link']) : '';
+  $vars['title'] = !empty($result['title']) ? check_plain($result['title']) : '';
 
   // Check for snippet existence. User search does not include snippets.
   $vars['snippet'] = '';
