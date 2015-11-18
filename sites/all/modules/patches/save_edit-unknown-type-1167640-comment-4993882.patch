@@ -1,0 +1,21 @@
+diff --git a/save_edit.module b/save_edit.module
+index 246559d..965cf73 100644
+--- a/save_edit.module
++++ b/save_edit.module
+@@ -137,6 +137,9 @@ function save_edit_admin_settings() {
+  */
+ function save_edit_form_alter(&$form, $form_state, $form_id) {
+ 	$node_types = variable_get('save_edit_node_types', array());
++  if (!isset($form['type']['#value'])) {
++    return;
++  }
+ 	$form_type = $form['type']['#value'];
+   if ($form['#id'] == 'node-form' && $node_types[$form_type] && user_access('use save and edit')) {
+     //add save and edit btn
+@@ -217,4 +220,4 @@ function redirect_save_edit_submit($form, &$form_state) {
+   		$form_state['redirect'] = 'node/'. $form_state['nid']. '/edit'; 
+   	}
+   }
+-}
+\ No newline at end of file
++}
