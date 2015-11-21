@@ -1,5 +1,9 @@
-name = CRLT Certificate
-description = The CRLT Certificate module.
+name = "CRLT Certificate"
+description = The CRLT Certificate module. [Heavily alters certificate content type form, including custom access of many fields that overrides Drupal permissions list. Adds custom validation checking for umich email and field completion. Sets mail settings, determines which email to send and sends. Requires content type certificate, Drupal user role of CRLT Staff, and the view crlt_certificate_overview. Description by SRK]
 package = Other
 core = 6.x
+dependencies[] = views
+dependencies[] = workflow
+dependencies[] = taxonomy
+dependencies[] = token
 
