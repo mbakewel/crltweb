@@ -1,5 +1,7 @@
-name = CRLT Certificate Sync
-description = The CRLT Certificate Sync module.
+name = "CRLT Certificate Sync"
+description = The CRLT Certificate Sync module. [Creates, edits, and deletes certificates based on consultation status. Requires content types of certificate and consultation. Description by SRK]
 package = Other
 core = 6.x
+dependencies[] = views
+dependencies[] = workflow
 
