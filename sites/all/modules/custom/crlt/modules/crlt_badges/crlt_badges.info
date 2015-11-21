@@ -1,5 +1,8 @@
-name = CRLT Badges
-description = The CRLT Badges module.
+name = "CRLT Badges"
+description = The CRLT Badges module. [Checks to see if requirements are met and gives badges. Requires crlt_user_certificate_eligible_events view, content types certificate, consultation, and that badge image file be loaded in a specific location in the files directory. Description by SRK]
 core = 6.x
 package = Other
+dependencies [] = workflow
+dependencies [] = views
+dependencies [] = signup
 
