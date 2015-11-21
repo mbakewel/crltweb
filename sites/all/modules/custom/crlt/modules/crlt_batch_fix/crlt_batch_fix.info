@@ -1,5 +1,5 @@
-name = CRLT Batch Fix
-description = A CRLT utility module to run various batch processes.
+name = "CRLT Batch Fix"
+description = A CRLT utility module to run various batch processes. [Appears to be a one-time fix needed during initial migrations. Kept for historical reference only. Description added by SRK]
 core = 6.x
 package = Other
 
