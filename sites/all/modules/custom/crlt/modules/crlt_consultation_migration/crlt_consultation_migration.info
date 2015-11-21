@@ -1,4 +1,4 @@
-name = CRLT Consultation Migration
-description = The CRLT Consultation Migration module.
+name = "CRLT Consultation Migration"
+description = The CRLT Consultation Migration module. [Appears to be a one-time fix needed during initial migrations. Kept for historical reference only. Description added by SRK]
 core = 6.x
 package = Other

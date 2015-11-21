@@ -1,5 +1,5 @@
 name = CRLT Site Maker Migration
-description = The CRLT Site Maker Migration Module.
+description = The CRLT Site Maker Migration Module. [Appears to be a one-time fix needed during initial migrations. Kept for historical reference only. Description added by SRK]
 core = 6.x
 package = Other
 

@@ -1,4 +1,4 @@
 name = CRLT Event Migration
-description = The CRLT Event Migration module.
+description = The CRLT Event Migration module. [Appears to be a one-time fix needed during initial migrations. Kept for historical reference only. Description added by SRK]
 core = 6.x
 package = Other
