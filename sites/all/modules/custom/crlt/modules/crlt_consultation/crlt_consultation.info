@@ -1,4 +1,5 @@
-name = CRLT Consultation
-description = The CRLT Consultation module.
+name = "CRLT Consultation"
+description = The CRLT Consultation module. [Creates the client manager interface on the consultation node type. Uses js to save/edit clients. Requires view consultation_clients, content type consultation, Drupal user roles of CRLT staff, admin and service provider. Service Provider = role id 13. Description by SRK].
 core = 6.x
 package = Other
+dependencies[] = views
