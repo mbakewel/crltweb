@@ -1,5 +1,5 @@
 name = CRLT Grant
-description = Custom features for the CRLT Grant content type
+description = Custom features for the CRLT Grant content type. [Creates a block with admin links, references crlt_grants, crlt_grant_applications, and crlt_grant_app_reviews_user views. Also creates a custom report page for each grant. Description by SRK]
 core = 6.x
 package = CRLT Grants
 dependencies[] = ctools
