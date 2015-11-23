@@ -1,4 +1,6 @@
 name = CRLT Event
-description = The CRLT Event module.
+description = The CRLT Event module. [Creates certificates for signups and adjusts workflow states. Also sets colors for eventcalendar view. Requires event and certificate content types. Description by SRK]
 core = 6.x
 package = Other
+dependencies[] = signup
+dependencies[] = workflow
