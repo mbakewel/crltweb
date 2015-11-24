@@ -1,5 +1,5 @@
 name = CRLT Grant Application
-description = Custom features for the CRLT Grant Application content type
+description = Custom features for the CRLT Grant Application content type [Creates form to assign reviewers, creates review content type nodes, sends confirmation/reminder emails to applicants, creates a form for applicants to enter reports and the last one is displayed on the application node. Requires grant application and grant application review types, grant_report_reminder_01 etc views and grant_report_due. Description added by SRK]
 core = 6.x
 package = CRLT Grants
 dependencies[] = ctools
