@@ -1,4 +1,8 @@
 name = CRLT Signup
-description = The CRLT Signup module.
+description = The CRLT Signup module. [Adds custom validation and submit to signup form that adds required fields and checks for umich email addressses. Creates admin links on the event. Creates the downloaded csv file of signups. Requires views eventscalendar and BM_signup_status_user_VBO_admin. Requires CRLT Staff role. Description added by SRK]
 core = 6.x
 package = Other
+dependencies[] = views
+dependencies[] = workflow
+dependencies[] = webform
+dependencies[] = signup
