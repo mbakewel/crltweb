@@ -6,7 +6,7 @@
 function crlt_event_menu() {
   $items = array();
   $items['crlt/event/settings'] = array(
-    'type' => NORMAL_MENU_ITEM,
+    'type' => MENU_NORMLAL_ITEM,
     'title' => 'CRLT Event Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('crlt_event_settings_form'),

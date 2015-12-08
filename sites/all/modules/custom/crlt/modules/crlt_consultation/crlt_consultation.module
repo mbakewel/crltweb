@@ -16,7 +16,7 @@ function crlt_consultation_menu() {
     'access arguments' => array('create consultation content')
   );
   $items['crlt/consultation/test'] = array(
-    'type' => NORMAL_MENU_ITEM,
+    'type' => MENU_NORMAL_ITEM,
     'page callback' => 'crlt_consultation_test_page',
     'access callback' => TRUE
   );
@@ -26,7 +26,7 @@ function crlt_consultation_menu() {
     'access arguments' => array('create consultation content')
   );
   $items['crlt/consultation/client/bulk-add'] = array(
-    'type' => NORMAL_MENU_ITEM,
+    'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('crlt_consultation_client_bulk_add'),
     'access arguments' => array('create consultation content')
