@@ -255,7 +255,7 @@ function phptemplate_signup_user_form($node) {
 }
 
 function city_magazine_custom_preprocess_page(&$variables) {
-  if($variables['node']->type != "") {
+  if(!empty($variables['node']->type)) {
     $variables['template_files'][] = 'page-node-' . $variables['node']->type;
   }
 
