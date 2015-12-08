@@ -6,14 +6,14 @@
 function crlt_signup_menu() {
   $items = array();
   $items['crlt/signup/bulk-users/%'] = array(
-    'type' => NORMAL_MENU_ITEM,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Bulk Signup Users',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('crlt_signup_bulk_users'),
     'access arguments' => array('administer all signups')
   );
   $items['crlt/signup/spreadsheet/%'] = array(
-    'type' => NORMAL_MENU_ITEM,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Download Signup Spreadsheet',
     'page callback' => 'crlt_signup_spreadsheet_download',
     'page arguments' => array(3),
