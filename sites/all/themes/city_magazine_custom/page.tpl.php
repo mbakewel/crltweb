@@ -9,7 +9,7 @@
   <?php print $styles; ?>
   <?php print $setting_styles; ?>
    <!--[if IE 9]>
-  <?php// print $ie9_styles; ?>
+  <?php //print $ie9_styles; ?>
     <style type="text/css">
     .gradient {
        filter: none;
