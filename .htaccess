@@ -66,6 +66,7 @@ DirectoryIndex index.php
 #  php_value mbstring.http_output            pass
 #  php_value mbstring.encoding_translation   0
 #</IfModule>
+#another comment
 
 # Requires mod_expires to be enabled.
 <IfModule mod_expires.c>
