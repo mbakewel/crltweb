@@ -126,6 +126,7 @@ RewriteRule ^tp$ http://www.crlt.umich.edu/tstrategies/tstpts [L,R=301]
 #RewriteRule ^theatre\/index\.php$ http://www.crlt.umich.edu/crltplayers [L,R=301]
 #RewriteRule ^theatre\/* http://www.crlt.umich.edu/crltplayers [L,R=301]
 #RewriteRule ^theatre$ http://www.crlt.umich.edu/crltplayers [L,R=301]
+#hello world
 RewriteRule ^faculty\/faculty\.php$ http://www.crlt.umich.edu/programs/faculty [L,R=301]
 RewriteRule ^50th\/index.php$ http://www.crlt.umich.edu/50th-celebration [L,R=301]
 RewriteRule ^50th\/index_50thPhotoGallery.php$ http://www.crlt.umich.edu/50th-celebration/index-50th-photo-gallery [L,R=301]
